@@ -3,6 +3,11 @@ import AppLayout from '../layouts/AppLayout.vue'
 import AccessDenied from '../pages/AccessDenied.vue'
 import Dashboard from '../pages/Dashboard.vue'
 import GoldRates from '../pages/gold-rates/GoldRates.vue'
+import Categories from '../pages/inventory/Categories.vue'
+import ItemForm from '../pages/inventory/ItemForm.vue'
+import ItemLabels from '../pages/inventory/ItemLabels.vue'
+import Items from '../pages/inventory/Items.vue'
+import StockSummary from '../pages/inventory/StockSummary.vue'
 import CustomerForm from '../pages/customers/CustomerForm.vue'
 import CustomerShow from '../pages/customers/CustomerShow.vue'
 import Customers from '../pages/customers/Customers.vue'
@@ -46,6 +51,42 @@ const router = createRouter({
                     name: 'gold-rates',
                     component: GoldRates,
                     meta: { permission: 'view gold rates' },
+                },
+                {
+                    path: 'inventory/items',
+                    name: 'items',
+                    component: Items,
+                    meta: { permission: 'view inventory' },
+                },
+                {
+                    path: 'inventory/items/new',
+                    name: 'item-create',
+                    component: ItemForm,
+                    meta: { permission: 'manage inventory' },
+                },
+                {
+                    path: 'inventory/items/:id/edit',
+                    name: 'item-edit',
+                    component: ItemForm,
+                    meta: { permission: 'manage inventory' },
+                },
+                {
+                    path: 'inventory/summary',
+                    name: 'stock-summary',
+                    component: StockSummary,
+                    meta: { permission: 'view inventory' },
+                },
+                {
+                    path: 'inventory/labels',
+                    name: 'item-labels',
+                    component: ItemLabels,
+                    meta: { permission: 'view inventory' },
+                },
+                {
+                    path: 'inventory/categories',
+                    name: 'categories',
+                    component: Categories,
+                    meta: { permission: 'view inventory' },
                 },
                 {
                     path: 'customers',

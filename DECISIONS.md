@@ -24,3 +24,10 @@
 - Customer photos use generated filenames on the `public` disk, with replacement cleanup after a successful database write.
 - A nonnegative opening balance is treated as the customer due balance until sales and payments exist; history keeps stable empty arrays for future sales, pawns, and payments.
 - `admin` and `manager` can view and manage customers; `cashier` can view customers but cannot mutate them.
+
+## Step 4
+
+- Item tags use server-generated `ITM-` ULIDs, and net weight is always recalculated as gross weight minus stone weight with three-decimal storage precision.
+- `StockService` is the only application service that creates stock movements or changes item status; item creation records an inbound movement, and weight edits record adjustments.
+- Inventory images use the `public` disk under generated filenames, while categories with existing items cannot be deleted.
+- `admin` and `manager` can view and manage inventory; `cashier` can view inventory but cannot mutate items or record adjustments.

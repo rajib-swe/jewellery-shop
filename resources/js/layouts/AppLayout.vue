@@ -32,6 +32,30 @@ const navigation = [
         permission: 'view customers',
     },
     {
+        title: 'Inventory Items',
+        icon: 'mdi-package-variant-closed',
+        to: { name: 'items' },
+        permission: 'view inventory',
+    },
+    {
+        title: 'Stock Summary',
+        icon: 'mdi-scale-balance',
+        to: { name: 'stock-summary' },
+        permission: 'view inventory',
+    },
+    {
+        title: 'Categories',
+        icon: 'mdi-shape-outline',
+        to: { name: 'categories' },
+        permission: 'view inventory',
+    },
+    {
+        title: 'Item Labels',
+        icon: 'mdi-printer-outline',
+        to: { name: 'item-labels' },
+        permission: 'view inventory',
+    },
+    {
         title: 'Settings',
         icon: 'mdi-cog-outline',
         to: { name: 'settings' },
@@ -118,7 +142,7 @@ onMounted(loadHeaderData)
         </v-list>
 
         <template #append>
-            <div class="pa-4 text-caption text-medium-emphasis">Step 3 · Customers</div>
+            <div class="pa-4 text-caption text-medium-emphasis">Step 4 · Gold inventory</div>
         </template>
     </v-navigation-drawer>
 
