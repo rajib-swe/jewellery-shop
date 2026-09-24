@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import GoldPriceTable from '../components/GoldPriceTable.vue'
 
 const authStore = useAuthStore()
 
@@ -62,6 +63,20 @@ const capabilities = [
                         <v-chip class="mt-5" color="primary" variant="flat">
                             {{ roleLabel }}
                         </v-chip>
+                    </v-card-text>
+                </v-card>
+            </v-col>
+        </v-row>
+
+        <v-row>
+            <v-col cols="12" class="mt-6">
+                <v-card elevation="2">
+                    <v-card-item>
+                        <v-card-title class="text-h6">Live gold price</v-card-title>
+                        <v-card-subtitle>Current market prices for common karats.</v-card-subtitle>
+                    </v-card-item>
+                    <v-card-text>
+                        <GoldPriceTable />
                     </v-card-text>
                 </v-card>
             </v-col>

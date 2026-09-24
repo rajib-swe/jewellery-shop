@@ -35,6 +35,8 @@ class DatabaseSeeder extends Seeder
                 'manage settings',
                 'view gold rates',
                 'manage gold rates',
+                'view customers',
+                'manage customers',
             ];
 
             foreach ($permissionNames as $permissionName) {
@@ -50,6 +52,7 @@ class DatabaseSeeder extends Seeder
                     'access api',
                     'view settings',
                     'view gold rates',
+                    'view customers',
                 ],
             ];
 
@@ -60,6 +63,7 @@ class DatabaseSeeder extends Seeder
             Role::findByName('cashier', 'web')->revokePermissionTo([
                 'manage settings',
                 'manage gold rates',
+                'manage customers',
             ]);
 
             $admin = User::firstOrNew([
@@ -77,6 +81,7 @@ class DatabaseSeeder extends Seeder
 
             $this->call(SettingSeeder::class);
             $this->call(GoldRateSeeder::class);
+            $this->call(CustomerSeeder::class);
         });
     }
 }

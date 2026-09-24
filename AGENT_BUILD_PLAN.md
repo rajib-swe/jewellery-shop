@@ -297,7 +297,7 @@ Commit: `feat: admin, audit log, backup and hardening`
 
 - [x] Step 1: Bootstrap and auth
 - [x] Step 2: Settings and gold rates
-- [ ] Step 3: Customers
+- [x] Step 3: Customers
 - [ ] Step 4: Gold inventory
 - [ ] Step 5: Sale entry
 - [ ] Step 6: Invoice printing

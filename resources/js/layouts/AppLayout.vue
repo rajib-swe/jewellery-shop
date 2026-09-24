@@ -26,6 +26,12 @@ const navigation = [
         permission: 'view gold rates',
     },
     {
+        title: 'Customers',
+        icon: 'mdi-account-group-outline',
+        to: { name: 'customers' },
+        permission: 'view customers',
+    },
+    {
         title: 'Settings',
         icon: 'mdi-cog-outline',
         to: { name: 'settings' },
@@ -112,7 +118,7 @@ onMounted(loadHeaderData)
         </v-list>
 
         <template #append>
-            <div class="pa-4 text-caption text-medium-emphasis">Step 2 · Settings &amp; rates</div>
+            <div class="pa-4 text-caption text-medium-emphasis">Step 3 · Customers</div>
         </template>
     </v-navigation-drawer>
 

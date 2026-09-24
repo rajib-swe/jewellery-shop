@@ -16,3 +16,11 @@
 - Gold rates may be backdated but cannot be future-dated. The latest endpoint returns the newest effective rate on or before today for each karat, ordered by karat; both browser and server use the application’s UTC date until a shop timezone is explicitly configured.
 - The top bar displays the latest 22K rate, with empty and loading states when no rate exists.
 - Logos are validated images stored on the `public` disk under generated filenames; the existing logo is removed only after a successful database update.
+
+## Step 3
+
+- Customer codes are server-generated as `CUS-` plus a ULID and are never accepted from clients.
+- Customer phones are normalized to a canonical digit string (`+880`, `00880`, and local `0` forms converge), required, and unique; NIDs remain optional and searchable.
+- Customer photos use generated filenames on the `public` disk, with replacement cleanup after a successful database write.
+- A nonnegative opening balance is treated as the customer due balance until sales and payments exist; history keeps stable empty arrays for future sales, pawns, and payments.
+- `admin` and `manager` can view and manage customers; `cashier` can view customers but cannot mutate them.

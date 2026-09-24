@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\GoldRateController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use Illuminate\Support\Facades\Route;
@@ -42,5 +43,24 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/gold-rates/{goldRate}', [GoldRateController::class, 'destroy'])
             ->middleware('permission:manage gold rates')
             ->name('api.v1.gold-rates.destroy');
+
+        Route::get('/customers', [CustomerController::class, 'index'])
+            ->middleware('permission:view customers')
+            ->name('api.v1.customers.index');
+        Route::post('/customers', [CustomerController::class, 'store'])
+            ->middleware('permission:manage customers')
+            ->name('api.v1.customers.store');
+        Route::get('/customers/{customer}/history', [CustomerController::class, 'history'])
+            ->middleware('permission:view customers')
+            ->name('api.v1.customers.history');
+        Route::get('/customers/{customer}', [CustomerController::class, 'show'])
+            ->middleware('permission:view customers')
+            ->name('api.v1.customers.show');
+        Route::match(['put', 'patch'], '/customers/{customer}', [CustomerController::class, 'update'])
+            ->middleware('permission:manage customers')
+            ->name('api.v1.customers.update');
+        Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])
+            ->middleware('permission:manage customers')
+            ->name('api.v1.customers.destroy');
     });
 });
