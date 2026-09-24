@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use RuntimeException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class DatabaseSeeder extends Seeder
 {
@@ -28,11 +29,38 @@ class DatabaseSeeder extends Seeder
         }
 
         DB::transaction(function () use ($password): void {
-            $accessApiPermission = Permission::findOrCreate('access api', 'web');
+            $permissionNames = [
+                'access api',
+                'view settings',
+                'manage settings',
+                'view gold rates',
+                'manage gold rates',
+            ];
 
-            foreach (['admin', 'manager', 'cashier'] as $roleName) {
-                Role::findOrCreate($roleName, 'web')->givePermissionTo($accessApiPermission);
+            foreach ($permissionNames as $permissionName) {
+                Permission::findOrCreate($permissionName, 'web');
             }
+
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+            $rolePermissions = [
+                'admin' => $permissionNames,
+                'manager' => $permissionNames,
+                'cashier' => [
+                    'access api',
+                    'view settings',
+                    'view gold rates',
+                ],
+            ];
+
+            foreach ($rolePermissions as $roleName => $permissions) {
+                Role::findOrCreate($roleName, 'web')->givePermissionTo($permissions);
+            }
+
+            Role::findByName('cashier', 'web')->revokePermissionTo([
+                'manage settings',
+                'manage gold rates',
+            ]);
 
             $admin = User::firstOrNew([
                 'email' => config('app.admin.email'),
@@ -46,6 +74,9 @@ class DatabaseSeeder extends Seeder
 
             $admin->save();
             $admin->assignRole('admin');
+
+            $this->call(SettingSeeder::class);
+            $this->call(GoldRateSeeder::class);
         });
     }
 }

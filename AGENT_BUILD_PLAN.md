@@ -296,7 +296,7 @@ Commit: `feat: admin, audit log, backup and hardening`
 ## Progress checklist (agent updates this)
 
 - [x] Step 1: Bootstrap and auth
-- [ ] Step 2: Settings and gold rates
+- [x] Step 2: Settings and gold rates
 - [ ] Step 3: Customers
 - [ ] Step 4: Gold inventory
 - [ ] Step 5: Sale entry

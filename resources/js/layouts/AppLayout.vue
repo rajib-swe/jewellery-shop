@@ -1,9 +1,13 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useGoldRatesStore } from '../stores/gold-rates'
+import { useSettingsStore } from '../stores/settings'
 
 const authStore = useAuthStore()
+const goldRateStore = useGoldRatesStore()
+const settingsStore = useSettingsStore()
 const router = useRouter()
 const drawer = ref(true)
 const logoutError = ref(false)
@@ -15,11 +19,29 @@ const navigation = [
         to: { name: 'dashboard' },
         permission: 'access api',
     },
+    {
+        title: 'Gold Rates',
+        icon: 'mdi-chart-line-variant',
+        to: { name: 'gold-rates' },
+        permission: 'view gold rates',
+    },
+    {
+        title: 'Settings',
+        icon: 'mdi-cog-outline',
+        to: { name: 'settings' },
+        permission: 'view settings',
+    },
 ]
 
 const visibleNavigation = computed(() => navigation.filter(
     (item) => !item.permission || authStore.can(item.permission),
 ))
+
+const shopName = computed(() => settingsStore.settings.shop_name || 'Jewellery Shop')
+const latestRate = computed(() => goldRateStore.latest.find((rate) => rate.karat === 22)
+    ?? goldRateStore.latest[0]
+    ?? null)
+const currencySymbol = computed(() => settingsStore.settings.currency_symbol || '৳')
 
 const initials = computed(() => {
     const name = authStore.user?.name?.trim() ?? ''
@@ -35,6 +57,20 @@ const initials = computed(() => {
         .join('')
 })
 
+function formatRate(value) {
+    return Number(value || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })
+}
+
+async function loadHeaderData() {
+    await Promise.allSettled([
+        settingsStore.fetchSettings(),
+        goldRateStore.fetchLatest(),
+    ])
+}
+
 async function handleLogout() {
     logoutError.value = false
 
@@ -45,6 +81,8 @@ async function handleLogout() {
         logoutError.value = true
     }
 }
+
+onMounted(loadHeaderData)
 </script>
 
 <template>
@@ -55,7 +93,7 @@ async function handleLogout() {
                     <v-icon icon="mdi-diamond-stone" />
                 </v-avatar>
                 <div>
-                    <div class="text-subtitle-1 font-weight-bold">Jewellery Shop</div>
+                    <div class="text-subtitle-1 font-weight-bold">{{ shopName }}</div>
                     <div class="text-caption text-medium-emphasis">Operations console</div>
                 </div>
             </div>
@@ -74,15 +112,28 @@ async function handleLogout() {
         </v-list>
 
         <template #append>
-            <div class="pa-4 text-caption text-medium-emphasis">Step 1 bootstrap</div>
+            <div class="pa-4 text-caption text-medium-emphasis">Step 2 · Settings &amp; rates</div>
         </template>
     </v-navigation-drawer>
 
     <v-app-bar color="surface" flat border>
         <v-app-bar-nav-icon aria-label="Toggle navigation" @click="drawer = !drawer" />
-        <v-app-bar-title>Jewellery Shop</v-app-bar-title>
+        <v-app-bar-title>{{ shopName }}</v-app-bar-title>
 
         <v-spacer />
+
+        <v-chip
+            v-if="latestRate"
+            class="mr-3 d-none d-sm-flex"
+            color="secondary"
+            prepend-icon="mdi-chart-line-variant"
+            variant="tonal"
+        >
+            {{ latestRate.karat }}K · {{ currencySymbol }}{{ formatRate(latestRate.rate_per_gram) }}/g
+        </v-chip>
+        <v-chip v-else class="mr-3 d-none d-sm-flex" color="warning" variant="tonal">
+            No gold rate
+        </v-chip>
 
         <v-menu v-if="authStore.user" location="bottom end">
             <template #activator="{ props }">
