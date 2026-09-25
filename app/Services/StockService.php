@@ -63,6 +63,9 @@ class StockService
         array $data,
         User $user,
         ?UploadedFile $photo = null,
+        ItemStatus $status = ItemStatus::InStock,
+        ?string $referenceType = null,
+        ?string $referenceId = null,
     ): Item {
         $data = Arr::except($data, ['tag_no', 'net_weight', 'status', 'image']);
         $netWeight = $this->netWeight(
@@ -72,11 +75,11 @@ class StockService
         $photoPath = $this->storePhoto($photo);
 
         try {
-            return DB::transaction(function () use ($data, $netWeight, $photoPath, $user): Item {
+            return DB::transaction(function () use ($data, $netWeight, $photoPath, $user, $status, $referenceType, $referenceId): Item {
                 $item = Item::query()->create([
                     ...$data,
                     'net_weight' => $netWeight,
-                    'status' => ItemStatus::InStock,
+                    'status' => $status,
                     'image' => $photoPath,
                 ]);
 
@@ -86,8 +89,8 @@ class StockService
                     $netWeight,
                     $user,
                     'Item added to inventory',
-                    'item',
-                    (string) $item->getKey(),
+                    $referenceType ?? 'item',
+                    $referenceId ?? (string) $item->getKey(),
                 );
 
                 return $item->load('category');

@@ -39,6 +39,9 @@ class DatabaseSeeder extends Seeder
                 'manage customers',
                 'view inventory',
                 'manage inventory',
+                'view sales',
+                'manage sales',
+                'void sales',
             ];
 
             foreach ($permissionNames as $permissionName) {
@@ -56,6 +59,7 @@ class DatabaseSeeder extends Seeder
                     'view gold rates',
                     'view customers',
                     'view inventory',
+                    'view sales',
                 ],
             ];
 
@@ -68,6 +72,8 @@ class DatabaseSeeder extends Seeder
                 'manage gold rates',
                 'manage customers',
                 'manage inventory',
+                'manage sales',
+                'void sales',
             ]);
 
             $admin = User::firstOrNew([

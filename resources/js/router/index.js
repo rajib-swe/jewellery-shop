@@ -13,6 +13,9 @@ import CustomerShow from '../pages/customers/CustomerShow.vue'
 import Customers from '../pages/customers/Customers.vue'
 import Login from '../pages/Login.vue'
 import PublicHome from '../pages/PublicHome.vue'
+import SaleEntry from '../pages/sales/SaleEntry.vue'
+import Sales from '../pages/sales/Sales.vue'
+import SaleShow from '../pages/sales/SaleShow.vue'
 import Settings from '../pages/settings/Settings.vue'
 import { useAuthStore } from '../stores/auth'
 
@@ -113,6 +116,24 @@ const router = createRouter({
                     meta: { permission: 'view customers' },
                 },
                 {
+                    path: 'sales',
+                    name: 'sales',
+                    component: Sales,
+                    meta: { permission: 'view sales' },
+                },
+                {
+                    path: 'sales/new',
+                    name: 'sale-create',
+                    component: SaleEntry,
+                    meta: { permission: 'manage sales' },
+                },
+                {
+                    path: 'sales/:id',
+                    name: 'sale-profile',
+                    component: SaleShow,
+                    meta: { permission: 'view sales' },
+                },
+                {
                     path: 'settings',
                     name: 'settings',
                     component: Settings,
@@ -127,6 +148,10 @@ const router = createRouter({
         {
             path: '/gold-rates',
             redirect: { name: 'gold-rates' },
+        },
+        {
+            path: '/sales',
+            redirect: { name: 'sales' },
         },
         {
             path: '/settings',

@@ -299,7 +299,7 @@ Commit: `feat: admin, audit log, backup and hardening`
 - [x] Step 2: Settings and gold rates
 - [x] Step 3: Customers
 - [x] Step 4: Gold inventory
-- [ ] Step 5: Sale entry
+- [x] Step 5: Sale entry
 - [ ] Step 6: Invoice printing
 - [ ] Step 7: Pawn account
 - [ ] Step 8: Pawn printing
@@ -319,5 +319,3 @@ Commit: `feat: admin, audit log, backup and hardening`
 - Checklist updated and commit made.
 
 
-
-Test from home pc

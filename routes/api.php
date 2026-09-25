@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\GoldRateController;
 use App\Http\Controllers\Api\V1\ItemController;
+use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\StockController;
 use Illuminate\Support\Facades\Route;
@@ -103,5 +104,21 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/items/{item}', [ItemController::class, 'destroy'])
             ->middleware('permission:manage inventory')
             ->name('api.v1.items.destroy');
+
+        Route::get('/sales', [SaleController::class, 'index'])
+            ->middleware('permission:view sales')
+            ->name('api.v1.sales.index');
+        Route::post('/sales', [SaleController::class, 'store'])
+            ->middleware('permission:manage sales')
+            ->name('api.v1.sales.store');
+        Route::get('/sales/{sale}', [SaleController::class, 'show'])
+            ->middleware('permission:view sales')
+            ->name('api.v1.sales.show');
+        Route::post('/sales/{sale}/payments', [SaleController::class, 'addPayment'])
+            ->middleware('permission:manage sales')
+            ->name('api.v1.sales.payments.store');
+        Route::post('/sales/{sale}/void', [SaleController::class, 'void'])
+            ->middleware('permission:void sales')
+            ->name('api.v1.sales.void');
     });
 });

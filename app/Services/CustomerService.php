@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\Sale;
+use App\Models\SalePayment;
+use App\SaleStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -124,11 +127,50 @@ class CustomerService
      */
     public function history(Customer $customer): array
     {
+        $sales = Sale::query()
+            ->where('customer_id', $customer->getKey())
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get();
+
+        $payments = SalePayment::query()
+            ->whereHas('sale', function (Builder $saleQuery) use ($customer): void {
+                $saleQuery->where('customer_id', $customer->getKey());
+            })
+            ->with('sale:id,invoice_no,date')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $dueCents = $sales
+            ->filter(fn (Sale $sale): bool => $sale->status === SaleStatus::Completed)
+            ->sum(fn (Sale $sale): int => (int) round((float) $sale->due * 100));
+
         return [
-            'sales' => [],
+            'sales' => $sales->map(fn (Sale $sale): array => [
+                'id' => $sale->id,
+                'invoice_no' => $sale->invoice_no,
+                'date' => $sale->date->toDateString(),
+                'status' => $sale->status->value,
+                'total' => (string) $sale->total,
+                'paid' => (string) $sale->paid,
+                'due' => (string) $sale->due,
+            ])->all(),
             'pawns' => [],
-            'payments' => [],
-            'due_balance' => (string) $customer->opening_balance,
+            'payments' => $payments->map(fn (SalePayment $payment): array => [
+                'id' => $payment->id,
+                'invoice_no' => $payment->sale->invoice_no,
+                'date' => $payment->sale->date->toDateString(),
+                'method' => $payment->method->value,
+                'amount' => (string) $payment->amount,
+                'reference' => $payment->reference,
+            ])->all(),
+            'due_balance' => number_format(
+                ((int) round((float) $customer->opening_balance * 100) + $dueCents) / 100,
+                2,
+                '.',
+                '',
+            ),
         ];
     }
 
