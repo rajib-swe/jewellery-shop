@@ -1,13 +1,22 @@
-<script setup>
+﻿<script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useInventoryStore } from '../../stores/inventory'
-import { ITEM_STATUS_OPTIONS, KARAT_OPTIONS, STOCK_MOVEMENT_OPTIONS } from '../../constants/inventory'
+import { useLocaleStore } from '../../stores/locale'
+import { useOptionLabels } from '../../constants/options'
+import { useWeightFormatter } from '../../utils/format'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const inventoryStore = useInventoryStore()
+const localeStore = useLocaleStore()
+const { formatWeight } = useWeightFormatter()
+const {
+    karatOptions: karatItems,
+    itemStatusOptions: statusItems,
+    stockMovementOptions: movementItems,
+} = useOptionLabels()
 const canManage = computed(() => authStore.can('manage inventory'))
 const page = ref(1)
 const perPage = ref(15)
@@ -28,14 +37,14 @@ const adjustmentForm = reactive({
 })
 let filterTimer = null
 
-const headers = [
-    { title: 'Item', key: 'name' },
-    { title: 'Category', key: 'category' },
-    { title: 'Karat', key: 'karat', width: 90 },
-    { title: 'Net weight', key: 'net_weight', align: 'end' },
-    { title: 'Status', key: 'status' },
+const headers = computed(() => [
+    { title: localeStore.t('inventory.item'), key: 'name' },
+    { title: localeStore.t('inventory.category'), key: 'category' },
+    { title: localeStore.t('inventory.karat'), key: 'karat', width: 90 },
+    { title: localeStore.t('inventory.netWeight'), key: 'net_weight', align: 'end' },
+    { title: localeStore.t('inventory.status'), key: 'status' },
     { title: '', key: 'actions', sortable: false, align: 'end', width: 150 },
-]
+])
 
 const categoryItems = computed(() => inventoryStore.categories.map((category) => ({
     title: category.name,
@@ -48,10 +57,6 @@ const statusColor = (value) => ({
     pawned: 'warning',
     scrap: 'error',
 }[value] ?? 'default')
-
-function formatWeight(value) {
-    return `${Number(value || 0).toFixed(3)} g`
-}
 
 function itemInitials(item) {
     return item.name
@@ -71,7 +76,7 @@ async function load() {
             fetchItems(),
         ])
     } catch {
-        errorMessage.value = inventoryStore.error ?? 'Unable to load inventory items.'
+        errorMessage.value = inventoryStore.error ?? localeStore.t('inventory.loadFailed')
     }
 }
 
@@ -86,7 +91,7 @@ async function fetchItems(force = false) {
             status: status.value || undefined,
         }, force)
     } catch {
-        errorMessage.value = inventoryStore.error ?? 'Unable to load inventory items.'
+        errorMessage.value = inventoryStore.error ?? localeStore.t('inventory.loadFailed')
     }
 }
 
@@ -128,7 +133,7 @@ async function confirmDelete() {
         deleteTarget.value = null
         await fetchItems(true)
     } catch {
-        errorMessage.value = inventoryStore.error ?? 'Unable to delete the inventory item.'
+        errorMessage.value = inventoryStore.error ?? localeStore.t('inventory.deleteFailed')
     }
 }
 
@@ -152,7 +157,7 @@ async function saveAdjustment() {
     errorMessage.value = ''
 
     if (!adjustmentForm.weight || Number(adjustmentForm.weight) <= 0) {
-        errorMessage.value = 'Enter a movement weight greater than zero.'
+        errorMessage.value = localeStore.t('inventory.adjustmentWeight')
         return
     }
 
@@ -167,7 +172,7 @@ async function saveAdjustment() {
         adjustmentTarget.value = null
         await Promise.all([fetchItems(true), inventoryStore.fetchSummary(true)])
     } catch (error) {
-        errorMessage.value = error.response?.data?.message ?? inventoryStore.error ?? 'Unable to record the adjustment.'
+        errorMessage.value = error.response?.data?.message ?? inventoryStore.error ?? localeStore.t('inventory.adjustFailed')
     }
 }
 
@@ -191,10 +196,10 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
             <v-col cols="12">
                 <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6">
                     <div>
-                        <v-card-subtitle>Gold inventory</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">Items</v-card-title>
+                        <v-card-subtitle>{{ $t('inventory.itemsSubtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('inventory.itemsTitle') }}</v-card-title>
                         <v-card-text class="text-medium-emphasis pa-0 mt-1">
-                            Track catalogue details, weights, images, tags, and stock status.
+                            {{ $t('inventory.itemsIntro') }}
                         </v-card-text>
                     </div>
                     <div class="d-flex flex-wrap ga-2">
@@ -203,7 +208,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                             variant="outlined"
                             @click="printLabels"
                         >
-                            Print labels
+                            {{ $t('inventory.printLabels') }}
                         </v-btn>
                         <v-btn
                             v-if="canManage"
@@ -211,7 +216,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                             prepend-icon="mdi-plus"
                             @click="openCreate"
                         >
-                            Add item
+                            {{ $t('inventory.addItem') }}
                         </v-btn>
                     </div>
                 </div>
@@ -240,7 +245,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                     clearable
                                     density="comfortable"
                                     hide-details
-                                    label="Search name, tag, or barcode"
+                                    :label="$t('inventory.searchPlaceholder')"
                                     prepend-inner-icon="mdi-magnify"
                                     variant="outlined"
                                 />
@@ -252,7 +257,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                     density="comfortable"
                                     hide-details
                                     :items="categoryItems"
-                                    label="Category"
+                                    :label="$t('inventory.selectCategory')"
                                     variant="outlined"
                                 />
                             </v-col>
@@ -262,8 +267,8 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                     clearable
                                     density="comfortable"
                                     hide-details
-                                    :items="KARAT_OPTIONS"
-                                    label="Karat"
+                                    :items="karatItems"
+                                    :label="$t('inventory.selectKarat')"
                                     variant="outlined"
                                 />
                             </v-col>
@@ -273,8 +278,8 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                     clearable
                                     density="comfortable"
                                     hide-details
-                                    :items="ITEM_STATUS_OPTIONS"
-                                    label="Status"
+                                    :items="statusItems"
+                                    :label="$t('inventory.selectStatus')"
                                     variant="outlined"
                                 />
                             </v-col>
@@ -320,14 +325,14 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                         </template>
                         <template #item.status="{ item }">
                             <v-chip :color="statusColor(item.status)" size="small" variant="tonal">
-                                {{ item.status.replace('_', ' ') }}
+                                {{ $t(`options.${item.status}`) }}
                             </v-chip>
                         </template>
                         <template #item.actions="{ item }">
                             <div class="d-flex justify-end ga-1">
                                 <v-btn
                                     v-if="canManage"
-                                    aria-label="Edit item"
+                                    :aria-label="('common.edit')"
                                     icon="mdi-pencil-outline"
                                     size="small"
                                     variant="text"
@@ -335,7 +340,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                 />
                                 <v-btn
                                     v-if="canManage"
-                                    aria-label="Adjust item stock"
+                                    :aria-label="('inventory.adjustStock')"
                                     icon="mdi-swap-vertical"
                                     size="small"
                                     variant="text"
@@ -343,7 +348,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                 />
                                 <v-btn
                                     v-if="canManage"
-                                    aria-label="Delete item"
+                                    :aria-label="('common.delete')"
                                     color="error"
                                     icon="mdi-delete-outline"
                                     size="small"
@@ -353,7 +358,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                             </div>
                         </template>
                         <template #no-data>
-                            <div class="pa-8 text-center text-medium-emphasis">No inventory items found.</div>
+                            <div class="pa-8 text-center text-medium-emphasis">{{ $t('inventory.noItems') }}</div>
                         </template>
                     </v-data-table-server>
 
@@ -373,34 +378,34 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                         </div>
                                     </div>
                                     <div class="d-flex justify-space-between mb-2">
-                                        <span class="text-caption text-medium-emphasis">Category</span>
+                                        <span class="text-caption text-medium-emphasis">{{ $t('inventory.category') }}</span>
                                         <span class="text-caption">{{ item.category.name }}</span>
                                     </div>
                                     <div class="d-flex justify-space-between mb-2">
-                                        <span class="text-caption text-medium-emphasis">Net weight</span>
+                                        <span class="text-caption text-medium-emphasis">{{ $t('inventory.netWeight') }}</span>
                                         <strong>{{ formatWeight(item.net_weight) }}</strong>
                                     </div>
                                     <v-chip :color="statusColor(item.status)" size="small" variant="tonal">
-                                        {{ item.status.replace('_', ' ') }}
+                                        {{ $t(`options.${item.status}`) }}
                                     </v-chip>
                                 </v-card-text>
                                 <v-card-actions v-if="canManage" class="px-3 pb-3">
                                     <v-btn
-                                        aria-label="Edit item"
+                                        :aria-label="('common.edit')"
                                         icon="mdi-pencil-outline"
                                         size="small"
                                         variant="text"
                                         @click="openEdit(item)"
                                     />
                                     <v-btn
-                                        aria-label="Adjust item stock"
+                                        :aria-label="('inventory.adjustStock')"
                                         icon="mdi-swap-vertical"
                                         size="small"
                                         variant="text"
                                         @click="openAdjustment(item)"
                                     />
                                     <v-btn
-                                        aria-label="Delete item"
+                                        :aria-label="('common.delete')"
                                         color="error"
                                         icon="mdi-delete-outline"
                                         size="small"
@@ -413,7 +418,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                     </v-row>
 
                     <div v-if="!inventoryStore.loadingItems && !inventoryStore.items.length" class="d-md-none pa-8 text-center text-medium-emphasis">
-                        No inventory items found.
+                        {{ $t('inventory.noItems') }}
                     </div>
                 </v-card>
             </v-col>
@@ -421,7 +426,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
 
         <v-dialog v-model="deleteDialog" max-width="420">
             <v-card>
-                <v-card-title>Delete this item?</v-card-title>
+                <v-card-title>{{ $t('inventory.deleteTitle') }}</v-card-title>
                 <v-card-text>
                     This removes {{ deleteTarget?.name }} and its stock history. This cannot be undone.
                 </v-card-text>
@@ -435,20 +440,20 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
 
         <v-dialog v-model="adjustmentDialog" max-width="520">
             <v-card>
-                <v-card-title>Adjust {{ adjustmentTarget?.name }}</v-card-title>
+                <v-card-title>{{ $t('inventory.adjustTitle', { name: adjustmentTarget?.name }) }}</v-card-title>
                 <v-card-text>
                     <v-alert class="mb-4" color="info" density="comfortable" variant="tonal">
-                        This records a stock movement and changes the item status through the inventory service.
+                        {{ $t('inventory.adjustBody') }}
                     </v-alert>
                     <v-select
                         v-model="adjustmentForm.type"
-                        :items="STOCK_MOVEMENT_OPTIONS"
-                        label="Movement type"
+                        :items="movementItems"
+                        :label="('inventory.movementType')"
                         required
                     />
                     <v-text-field
                         v-model="adjustmentForm.weight"
-                        label="Movement weight"
+                        :label="('inventory.movementWeight')"
                         min="0.001"
                         required
                         step="0.001"
@@ -457,21 +462,21 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                     />
                     <v-select
                         v-model="adjustmentForm.status"
-                        :items="ITEM_STATUS_OPTIONS"
-                        label="New item status"
+                        :items="statusItems"
+                                    :label="$t('inventory.newStatus')"
                         required
                     />
                     <v-textarea
                         v-model="adjustmentForm.note"
                         auto-grow
-                        label="Note"
+                        :label="('common.notes')"
                         rows="2"
                     />
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
                     <v-btn variant="text" @click="adjustmentDialog = false">Cancel</v-btn>
-                    <v-btn color="primary" :loading="inventoryStore.saving" @click="saveAdjustment">Record adjustment</v-btn>
+                    <v-btn color="primary" :loading="inventoryStore.saving" @click="saveAdjustment">{{ $t('inventory.recordAdjustment') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

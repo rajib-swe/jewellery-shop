@@ -1,26 +1,29 @@
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import GoldPriceTable from '../components/GoldPriceTable.vue'
+import { useLocaleStore } from '../stores/locale'
 
 const router = useRouter()
+const localeStore = useLocaleStore()
 
-const features = [
+const features = computed(() => [
     {
         icon: 'mdi-chart-line-variant',
-        title: 'Live market rates',
-        text: 'Keep a clear view of common gold karats and their latest effective prices.',
+        title: localeStore.t('public.features.ratesTitle'),
+        text: localeStore.t('public.features.ratesText'),
     },
     {
         icon: 'mdi-storefront-outline',
-        title: 'Built for your shop',
-        text: 'Manage customers, stock, sales, and pawn accounts from one focused workspace.',
+        title: localeStore.t('public.features.shopTitle'),
+        text: localeStore.t('public.features.shopText'),
     },
     {
         icon: 'mdi-shield-check-outline',
-        title: 'Reliable records',
-        text: 'Keep rates, transactions, and important changes organized and auditable.',
+        title: localeStore.t('public.features.recordsTitle'),
+        text: localeStore.t('public.features.recordsText'),
     },
-]
+])
 
 function scrollToPrices() {
     document.getElementById('live-prices')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -36,35 +39,35 @@ function scrollToPrices() {
                         <v-icon icon="mdi-diamond-stone" size="22" />
                     </span>
                     <span>
-                        <strong>Jewellery Shop</strong>
-                        <small>Price & operations</small>
+                        <strong>{{ $t('common.appName') }}</strong>
+                        <small>{{ $t('public.tagline') }}</small>
                     </span>
                 </router-link>
 
-                <nav class="public-nav" aria-label="Primary navigation">
-                    <a href="#live-prices">Live prices</a>
-                    <a href="#why-us">Why us</a>
+                <nav class="public-nav" :aria-label="$t('public.navWhy')">
+                    <a href="#live-prices">{{ $t('public.navPrices') }}</a>
+                    <a href="#why-us">{{ $t('public.navWhy') }}</a>
                     <v-btn
                         :to="{ name: 'login' }"
                         color="primary"
                         size="small"
                         variant="outlined"
                     >
-                        Admin sign in
+                        {{ $t('public.adminSignIn') }}
                     </v-btn>
                 </nav>
             </header>
 
             <section class="public-hero" aria-labelledby="public-title">
                 <div class="hero-copy">
-                    <p class="eyebrow">GOLD PRICE BANGLADESH</p>
-                    <h1 id="public-title">আজকের স্বর্ণের দাম, এক নজরে</h1>
+                    <p class="eyebrow">{{ $t('public.eyebrowPrices') }}</p>
+                    <h1 id="public-title">{{ $t('public.heroTitle') }}</h1>
                     <p class="hero-description">
-                        প্রতিটি ক্যারেটের বাজার দাম দেখুন এবং আপনার জুয়েলারি দোকের কাজগুলো একটি সহজ ওয়ার্কস্পেসে গুছিয়ে নিন।
+                        {{ $t('public.heroDescription') }}
                     </p>
                     <div class="hero-actions">
                         <v-btn color="primary" size="large" @click="scrollToPrices">
-                            View live prices
+                            {{ $t('public.viewPrices') }}
                         </v-btn>
                         <v-btn
                             color="secondary"
@@ -72,7 +75,7 @@ function scrollToPrices() {
                             variant="text"
                             @click="router.push({ name: 'login' })"
                         >
-                            Open dashboard
+                            {{ $t('public.openDashboard') }}
                         </v-btn>
                     </div>
                 </div>
@@ -90,10 +93,10 @@ function scrollToPrices() {
             <section id="live-prices" class="public-section prices-section" aria-labelledby="prices-title">
                 <div class="section-heading">
                     <div>
-                        <p class="eyebrow">LIVE MARKET PRICES</p>
-                        <h2 id="prices-title">আজকের দাম</h2>
+                        <p class="eyebrow">{{ $t('public.eyebrowLive') }}</p>
+                        <h2 id="prices-title">{{ $t('public.todaysPrices') }}</h2>
                     </div>
-                    <span class="section-note">Updated from the live market feed</span>
+                    <span class="section-note">{{ $t('public.updatedNote') }}</span>
                 </div>
                 <div class="price-card">
                     <GoldPriceTable mode="table" />
@@ -103,8 +106,8 @@ function scrollToPrices() {
             <section id="why-us" class="public-section" aria-labelledby="why-title">
                 <div class="section-heading">
                     <div>
-                        <p class="eyebrow">A CLEARER WORKSPACE</p>
-                        <h2 id="why-title">শপ চালানোর জন্য প্রস্তুত</h2>
+                        <p class="eyebrow">{{ $t('public.eyebrowWhy') }}</p>
+                        <h2 id="why-title">{{ $t('public.whyTitle') }}</h2>
                     </div>
                 </div>
                 <div class="feature-grid">
@@ -122,17 +125,17 @@ function scrollToPrices() {
 
             <section class="public-cta" aria-labelledby="cta-title">
                 <div>
-                    <p class="eyebrow">READY WHEN YOU ARE</p>
-                    <h2 id="cta-title">আপনার দোকের আজকের ডিজিটাল শুরু করুন</h2>
+                    <p class="eyebrow">{{ $t('public.eyebrowReady') }}</p>
+                    <h2 id="cta-title">{{ $t('public.ctaTitle') }}</h2>
                 </div>
                 <v-btn color="primary" size="large" :to="{ name: 'login' }">
-                    Sign in to your shop
+                    {{ $t('public.ctaButton') }}
                 </v-btn>
             </section>
 
             <footer class="public-footer">
-                <span>Jewellery Shop</span>
-                <span>Simple tools for a modern jewellery business.</span>
+                <span>{{ $t('common.appName') }}</span>
+                <span>{{ $t('public.footerNote') }}</span>
             </footer>
         </div>
     </v-main>

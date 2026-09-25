@@ -2,8 +2,10 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useLocaleStore } from '../stores/locale'
 
 const authStore = useAuthStore()
+const localeStore = useLocaleStore()
 const router = useRouter()
 const errorMessage = ref('')
 const submitting = ref(false)
@@ -23,7 +25,7 @@ async function continueToLogin() {
         await authStore.logout()
         await router.push({ name: 'login' })
     } catch {
-        errorMessage.value = 'Unable to end the current session. Please try again.'
+        errorMessage.value = localeStore.t('auth.sessionEndFailed')
     } finally {
         submitting.value = false
     }
@@ -40,9 +42,9 @@ async function continueToLogin() {
                             <v-avatar color="error" variant="tonal" size="72" class="mb-5">
                                 <v-icon icon="mdi-shield-alert-outline" size="38" />
                             </v-avatar>
-                            <v-card-title class="text-h4 font-weight-bold">Access denied</v-card-title>
+                            <v-card-title class="text-h4 font-weight-bold">{{ $t('access.denied') }}</v-card-title>
                             <v-card-text class="mt-3 text-body-1 text-medium-emphasis">
-                                Your account does not have permission to open this area.
+                                {{ $t('access.deniedBody') }}
                             </v-card-text>
 
                             <v-alert
@@ -63,7 +65,7 @@ async function continueToLogin() {
                                 size="large"
                                 @click="continueToLogin"
                             >
-                                {{ authStore.isAuthenticated ? 'Sign out' : 'Go to sign in' }}
+                                {{ authStore.isAuthenticated ? $t('auth.signOut') : $t('access.goToSignIn') }}
                             </v-btn>
                         </v-card-text>
                     </v-card>

@@ -1,17 +1,20 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { PAYMENT_METHOD_OPTIONS } from '../../constants/sales'
+import { useOptionLabels } from '../../constants/options'
 import { useAuthStore } from '../../stores/auth'
+import { useLocaleStore } from '../../stores/locale'
 import { useSalesStore } from '../../stores/sales'
-import { useSettingsStore } from '../../stores/settings'
-import { gramsToTraditional } from '../../utils/weight'
+import { useCurrency, useWeightFormatter } from '../../utils/format'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const localeStore = useLocaleStore()
 const salesStore = useSalesStore()
-const settingsStore = useSettingsStore()
+const { paymentMethodOptions: paymentItems } = useOptionLabels()
+const currencySymbol = useCurrency()
+const { formatWeight } = useWeightFormatter()
 const saleId = computed(() => route.params.id)
 const canManage = computed(() => authStore.can('manage sales'))
 const canVoid = computed(() => authStore.can('void sales'))
@@ -23,34 +26,25 @@ const voidDialog = ref(false)
 const paymentForm = reactive({ method: 'cash', amount: '', reference: '' })
 const voidForm = reactive({ reason: '' })
 
-const currencySymbol = computed(() => settingsStore.settings.currency_symbol || '৳')
-const weightUnit = computed(() => settingsStore.settings.weight_unit || 'gram')
-
 function money(value) {
-    return `${currencySymbol.value}${Number(value || 0).toLocaleString('en-US', {
+    const amount = Number(value || 0)
+
+    return `${currencySymbol.value}${amount.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })}`
 }
 
-function formatWeight(grams) {
-    const value = Number(grams || 0)
+const methodColor = (method) => ({
+    cash: 'success',
+    bkash: 'primary',
+    nagad: 'warning',
+    card: 'info',
+    bank: 'default',
+}[method] ?? 'default')
 
-    if (weightUnit.value === 'vori') {
-        return `${gramsToTraditional(value).vori.toFixed(4)} vori`
-    }
-
-    return `${value.toFixed(3)} g`
-}
-
-function methodColor(method) {
-    return {
-        cash: 'success',
-        bkash: 'primary',
-        nagad: 'warning',
-        card: 'info',
-        bank: 'default',
-    }[method] ?? 'default'
+function capitalize(value) {
+    return String(value).charAt(0).toUpperCase() + String(value).slice(1)
 }
 
 async function load() {
@@ -58,12 +52,9 @@ async function load() {
     salesStore.clearCurrent()
 
     try {
-        await Promise.all([
-            settingsStore.fetchSettings(),
-            salesStore.fetchSale(saleId.value, true),
-        ])
+        await salesStore.fetchSale(saleId.value, true)
     } catch {
-        errorMessage.value = salesStore.error ?? 'Unable to load the sale.'
+        errorMessage.value = salesStore.error ?? localeStore.t('sales.loadFailed')
     }
 }
 
@@ -81,7 +72,7 @@ async function submitPayment() {
     errorMessage.value = ''
 
     if (!(Number(paymentForm.amount) > 0)) {
-        errorMessage.value = 'Enter a payment amount greater than zero.'
+        errorMessage.value = localeStore.t('sales.amountRequired')
         return
     }
 
@@ -93,7 +84,9 @@ async function submitPayment() {
         })
         paymentDialog.value = false
     } catch (error) {
-        errorMessage.value = error.response?.data?.message ?? salesStore.error ?? 'Unable to record the payment.'
+        errorMessage.value = error.response?.data?.message
+            ?? salesStore.error
+            ?? localeStore.t('sales.paymentFailed')
     }
 }
 
@@ -110,7 +103,9 @@ async function confirmVoid() {
         await salesStore.voidCurrentSale(saleId.value, voidForm.reason.trim() || null)
         voidDialog.value = false
     } catch (error) {
-        errorMessage.value = error.response?.data?.message ?? salesStore.error ?? 'Unable to void the sale.'
+        errorMessage.value = error.response?.data?.message
+            ?? salesStore.error
+            ?? localeStore.t('sales.voidFailed')
     }
 }
 
@@ -132,11 +127,11 @@ onMounted(load)
                                 variant="text"
                                 @click="router.push({ name: 'sales' })"
                             >
-                                Sales
+                                {{ $t('nav.sales') }}
                             </v-btn>
                         </v-card-subtitle>
                         <v-card-title class="text-h4 font-weight-bold">
-                            {{ sale?.invoice_no ?? 'Sale' }}
+                            {{ sale?.invoice_no ?? $t('sales.invoice') }}
                         </v-card-title>
                         <v-card-text class="text-medium-emphasis pa-0 mt-1">
                             <template v-if="sale">
@@ -144,8 +139,10 @@ onMounted(load)
                                 <template v-if="sale.customer">
                                     · {{ sale.customer.name }} ({{ sale.customer.phone }})
                                 </template>
-                                <template v-else>· Walk-in customer</template>
-                                <template v-if="sale.user"> · Sold by {{ sale.user.name }}</template>
+                                <template v-else>· {{ $t('sales.walkInCustomer') }}</template>
+                                <template v-if="sale.user">
+                                    · {{ $t('sales.soldBy') }} {{ sale.user.name }}
+                                </template>
                             </template>
                         </v-card-text>
                     </div>
@@ -156,7 +153,7 @@ onMounted(load)
                             prepend-icon="mdi-cash-plus"
                             @click="openPayment"
                         >
-                            Add due payment
+                            {{ $t('sales.addDuePayment') }}
                         </v-btn>
                         <v-btn
                             v-if="canVoid && sale && !isVoided"
@@ -165,7 +162,7 @@ onMounted(load)
                             variant="outlined"
                             @click="openVoid"
                         >
-                            Void sale
+                            {{ $t('sales.voidSale') }}
                         </v-btn>
                     </div>
                 </div>
@@ -191,8 +188,10 @@ onMounted(load)
                     type="error"
                     variant="tonal"
                 >
-                    This sale was voided{{ sale.voided_at ? ` on ${new Date(sale.voided_at).toLocaleString()}` : '' }}.
-                    <template v-if="sale.void_reason">Reason: {{ sale.void_reason }}</template>
+                    {{ $t('sales.voidSale') }}<template v-if="sale.voided_at">
+                        · {{ new Date(sale.voided_at).toLocaleString() }}
+                    </template>
+                    <template v-if="sale.void_reason"> · {{ sale.void_reason }}</template>
                 </v-alert>
 
                 <v-progress-linear v-if="salesStore.loadingCurrent" indeterminate />
@@ -201,16 +200,16 @@ onMounted(load)
             <template v-if="sale">
                 <v-col cols="12" lg="8">
                     <v-card class="mb-6" elevation="2">
-                        <v-card-title class="text-subtitle-1 font-weight-medium">Items</v-card-title>
+                        <v-card-title class="text-subtitle-1 font-weight-medium">{{ $t('sales.items') }}</v-card-title>
                         <v-table density="comfortable">
                             <thead>
                                 <tr>
-                                    <th>Item</th>
-                                    <th class="text-end">Weight</th>
-                                    <th class="text-end">Rate/g</th>
-                                    <th class="text-end">Gold value</th>
-                                    <th class="text-end">Making</th>
-                                    <th class="text-end">Line total</th>
+                                    <th>{{ $t('sales.items') }}</th>
+                                    <th class="text-end">{{ $t('inventory.netWeight') }}</th>
+                                    <th class="text-end">{{ $t('sales.ratePerGram') }}</th>
+                                    <th class="text-end">{{ $t('sales.goldValue') }}</th>
+                                    <th class="text-end">{{ $t('sales.making') }}</th>
+                                    <th class="text-end">{{ $t('sales.lineTotal') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -227,7 +226,7 @@ onMounted(load)
                                     <td class="text-end">
                                         {{ money(line.making) }}
                                         <div v-if="Number(line.stone_price) > 0" class="text-caption text-medium-emphasis">
-                                            + {{ money(line.stone_price) }} stone
+                                            + {{ money(line.stone_price) }} {{ $t('inventory.stonePrice') }}
                                         </div>
                                     </td>
                                     <td class="text-end font-weight-medium">{{ money(line.line_total) }}</td>
@@ -237,15 +236,17 @@ onMounted(load)
                     </v-card>
 
                     <v-card v-if="sale.exchanges.length" class="mb-6" elevation="2">
-                        <v-card-title class="text-subtitle-1 font-weight-medium">Old gold exchange</v-card-title>
+                        <v-card-title class="text-subtitle-1 font-weight-medium">
+                            {{ $t('sales.oldGoldExchange') }}
+                        </v-card-title>
                         <v-table density="comfortable">
                             <thead>
                                 <tr>
-                                    <th>Description</th>
-                                    <th>Karat</th>
-                                    <th class="text-end">Weight</th>
-                                    <th class="text-end">Rate/g</th>
-                                    <th class="text-end">Amount</th>
+                                    <th>{{ $t('sales.description') }}</th>
+                                    <th>{{ $t('inventory.karat') }}</th>
+                                    <th class="text-end">{{ $t('inventory.netWeight') }}</th>
+                                    <th class="text-end">{{ $t('sales.ratePerGram') }}</th>
+                                    <th class="text-end">{{ $t('common.amount') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -253,7 +254,7 @@ onMounted(load)
                                     <td>
                                         {{ exchange.description }}
                                         <div v-if="exchange.item_id" class="text-caption text-medium-emphasis">
-                                            Kept as a scrap item
+                                            {{ $t('sales.storeAsScrap') }}
                                         </div>
                                     </td>
                                     <td>{{ exchange.karat }}K</td>
@@ -266,7 +267,7 @@ onMounted(load)
                     </v-card>
 
                     <v-card elevation="2">
-                        <v-card-title class="text-subtitle-1 font-weight-medium">Payments</v-card-title>
+                        <v-card-title class="text-subtitle-1 font-weight-medium">{{ $t('sales.payments') }}</v-card-title>
                         <v-list v-if="sale.payments.length" class="bg-transparent">
                             <v-list-item
                                 v-for="payment in sale.payments"
@@ -276,7 +277,7 @@ onMounted(load)
                             >
                                 <template #prepend>
                                     <v-chip :color="methodColor(payment.method)" size="small" variant="tonal">
-                                        {{ payment.method }}
+                                        {{ $t(`options.method${capitalize(payment.method)}`) }}
                                     </v-chip>
                                 </template>
                                 <template v-if="payment.reference" #append>
@@ -285,30 +286,30 @@ onMounted(load)
                             </v-list-item>
                         </v-list>
                         <v-card-text v-else class="text-medium-emphasis">
-                            No payment recorded for this sale.
+                            {{ $t('sales.noPayment') }}
                         </v-card-text>
                     </v-card>
                 </v-col>
 
                 <v-col cols="12" lg="4">
                     <v-card elevation="2">
-                        <v-card-title class="text-subtitle-1 font-weight-medium">Totals</v-card-title>
+                        <v-card-title class="text-subtitle-1 font-weight-medium">{{ $t('common.total') }}</v-card-title>
                         <v-card-text>
                             <v-list density="compact" class="bg-transparent">
                                 <v-list-item>
-                                    <v-list-item-title>Subtotal</v-list-item-title>
+                                    <v-list-item-title>{{ $t('common.subtotal') }}</v-list-item-title>
                                     <template #append>{{ money(sale.subtotal) }}</template>
                                 </v-list-item>
                                 <v-list-item>
-                                    <v-list-item-title>Discount</v-list-item-title>
+                                    <v-list-item-title>{{ $t('common.discount') }}</v-list-item-title>
                                     <template #append>- {{ money(sale.discount) }}</template>
                                 </v-list-item>
                                 <v-list-item>
-                                    <v-list-item-title>VAT</v-list-item-title>
+                                    <v-list-item-title>{{ $t('common.vat') }}</v-list-item-title>
                                     <template #append>{{ money(sale.vat) }}</template>
                                 </v-list-item>
                                 <v-list-item>
-                                    <v-list-item-title>Old gold exchange</v-list-item-title>
+                                    <v-list-item-title>{{ $t('sales.oldGoldExchange') }}</v-list-item-title>
                                     <template #append>- {{ money(sale.exchange_amount) }}</template>
                                 </v-list-item>
                             </v-list>
@@ -316,15 +317,15 @@ onMounted(load)
                             <v-divider class="my-3" />
 
                             <div class="d-flex justify-space-between text-subtitle-1 font-weight-bold">
-                                <span>Total</span>
+                                <span>{{ $t('common.total') }}</span>
                                 <span>{{ money(sale.total) }}</span>
                             </div>
                             <div class="d-flex justify-space-between text-body-2 mt-2">
-                                <span>Paid</span>
+                                <span>{{ $t('common.paid') }}</span>
                                 <span>{{ money(sale.paid) }}</span>
                             </div>
                             <div class="d-flex justify-space-between text-body-2 mt-1">
-                                <span>Due</span>
+                                <span>{{ $t('common.due') }}</span>
                                 <span :class="{ 'text-error font-weight-medium': Number(sale.due) > 0 }">
                                     {{ money(sale.due) }}
                                 </span>
@@ -342,20 +343,20 @@ onMounted(load)
 
         <v-dialog v-model="paymentDialog" max-width="480">
             <v-card>
-                <v-card-title>Add a due payment</v-card-title>
+                <v-card-title>{{ $t('sales.paymentTitle') }}</v-card-title>
                 <v-card-text>
                     <v-alert class="mb-4" color="info" density="comfortable" variant="tonal">
-                        Outstanding due: {{ money(sale?.due) }}
+                        {{ $t('sales.outstandingDue', { amount: money(sale?.due) }) }}
                     </v-alert>
                     <v-select
                         v-model="paymentForm.method"
-                        :items="PAYMENT_METHOD_OPTIONS"
-                        label="Method"
+                        :items="paymentItems"
+                        :label="$t('common.method')"
                         variant="outlined"
                     />
                     <v-text-field
                         v-model="paymentForm.amount"
-                        label="Amount"
+                        :label="$t('common.amount')"
                         min="0.01"
                         step="0.01"
                         :suffix="currencySymbol"
@@ -364,36 +365,40 @@ onMounted(load)
                     />
                     <v-text-field
                         v-model="paymentForm.reference"
-                        label="Reference"
+                        :label="$t('common.reference')"
                         variant="outlined"
                     />
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="paymentDialog = false">Cancel</v-btn>
-                    <v-btn color="primary" :loading="salesStore.saving" @click="submitPayment">Record payment</v-btn>
+                    <v-btn variant="text" @click="paymentDialog = false">{{ $t('common.cancel') }}</v-btn>
+                    <v-btn color="primary" :loading="salesStore.saving" @click="submitPayment">
+                        {{ $t('sales.recordPayment') }}
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
 
         <v-dialog v-model="voidDialog" max-width="480">
             <v-card>
-                <v-card-title>Void this sale?</v-card-title>
+                <v-card-title>{{ $t('sales.voidTitle') }}</v-card-title>
                 <v-card-text>
                     <v-alert class="mb-4" color="warning" density="comfortable" variant="tonal">
-                        The items return to stock, the exchange scrap is removed, and every payment is reversed.
+                        {{ $t('sales.voidBody') }}
                     </v-alert>
                     <v-textarea
                         v-model="voidForm.reason"
-                        label="Reason"
+                        :label="$t('sales.reason')"
                         rows="2"
                         variant="outlined"
                     />
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="voidDialog = false">Cancel</v-btn>
-                    <v-btn color="error" :loading="salesStore.saving" @click="confirmVoid">Void sale</v-btn>
+                    <v-btn variant="text" @click="voidDialog = false">{{ $t('common.cancel') }}</v-btn>
+                    <v-btn color="error" :loading="salesStore.saving" @click="confirmVoid">
+                        {{ $t('sales.voidSale') }}
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

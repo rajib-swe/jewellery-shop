@@ -1,13 +1,17 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { GOLD_KARATS } from '../../constants/gold-rates'
+import { GOLD_KARAT_VALUES } from '../../constants/gold-rates'
+import { useOptionLabels } from '../../constants/options'
 import { useAuthStore } from '../../stores/auth'
 import { useGoldRatesStore } from '../../stores/gold-rates'
+import { useLocaleStore } from '../../stores/locale'
 import { useSettingsStore } from '../../stores/settings'
 
 const authStore = useAuthStore()
 const rateStore = useGoldRatesStore()
+const localeStore = useLocaleStore()
 const settingsStore = useSettingsStore()
+const { goldKaratOptions: karatItems } = useOptionLabels()
 const canManage = computed(() => authStore.can('manage gold rates'))
 const currencySymbol = computed(() => settingsStore.settings.currency_symbol || '৳')
 const page = ref(1)
@@ -28,18 +32,13 @@ const deleteDialog = ref(false)
 const deleteTarget = ref(null)
 let searchTimer = null
 
-const headers = [
-    { title: 'Karat', key: 'karat', width: 100 },
-    { title: 'Rate / gram', key: 'rate_per_gram' },
-    { title: 'Effective date', key: 'effective_date' },
-    { title: 'Created by', key: 'created_by' },
+const headers = computed(() => [
+    { title: localeStore.t('goldRates.karat'), key: 'karat', width: 100 },
+    { title: localeStore.t('goldRates.ratePerGramColumn'), key: 'rate_per_gram' },
+    { title: localeStore.t('goldRates.effectiveDate'), key: 'effective_date' },
+    { title: localeStore.t('goldRates.createdBy'), key: 'created_by' },
     { title: '', key: 'actions', sortable: false, align: 'end' },
-]
-
-const karatItems = GOLD_KARATS.map((karat) => ({
-    title: karat.label,
-    value: karat.value,
-}))
+])
 
 const currentRateExists = (karat) => rateStore.latest.some(
     (rate) => rate.karat === karat && rate.effective_date === todayDateString(),
@@ -67,7 +66,7 @@ async function load() {
     ])
 
     if (results.some((result) => result.status === 'rejected')) {
-        errorMessage.value = rateStore.error ?? settingsStore.error ?? 'Unable to load gold rates.'
+        errorMessage.value = rateStore.error ?? settingsStore.error ?? localeStore.t('goldRates.loadFailed')
     }
 }
 
@@ -81,7 +80,7 @@ async function fetchHistory(force = false) {
             search: search.value || undefined,
         }, force)
     } catch {
-        errorMessage.value = rateStore.error ?? 'Unable to load gold-rate history.'
+        errorMessage.value = rateStore.error ?? localeStore.t('goldRates.loadFailed')
     }
 }
 
@@ -110,7 +109,7 @@ async function saveToday(karat) {
     const rate = rateStore.latest.find((item) => item.karat === karat)
 
     if (!todayInputs[karat]) {
-        errorMessage.value = `Enter a rate for ${karat}K.`
+        errorMessage.value = localeStore.t('goldRates.rateRequired', { karat: `${karat}K` })
         return
     }
 
@@ -124,7 +123,7 @@ async function saveToday(karat) {
         }, rate?.effective_date === todayDateString() ? rate.id : null)
         await refreshAfterWrite()
     } catch {
-        errorMessage.value = rateStore.error ?? 'Unable to save the gold rate.'
+        errorMessage.value = rateStore.error ?? localeStore.t('goldRates.saveFailed')
     } finally {
         todaySaving[karat] = false
     }
@@ -162,7 +161,7 @@ async function saveDialog() {
         dialog.value = false
         await refreshAfterWrite()
     } catch {
-        errorMessage.value = rateStore.error ?? 'Unable to save the gold rate.'
+        errorMessage.value = rateStore.error ?? localeStore.t('goldRates.saveFailed')
     }
 }
 
@@ -185,14 +184,14 @@ async function confirmDelete() {
         deleteTarget.value = null
         await refreshAfterWrite()
     } catch {
-        errorMessage.value = rateStore.error ?? 'Unable to delete the gold rate.'
+        errorMessage.value = rateStore.error ?? localeStore.t('goldRates.deleteFailed')
     } finally {
         dialogSaving.value = false
     }
 }
 
 watch(() => rateStore.latest, (rates) => {
-    GOLD_KARATS.forEach(({ value }) => {
+    GOLD_KARAT_VALUES.forEach((value) => {
         const rate = rates.find((item) => item.karat === value)
 
         if (rate && !todayInputs[value]) {
@@ -217,8 +216,8 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
             <v-col cols="12">
                 <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6">
                     <div>
-                        <v-card-subtitle>Daily pricing</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">Gold Rates</v-card-title>
+                        <v-card-subtitle>{{ $t('goldRates.subtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('goldRates.title') }}</v-card-title>
                     </div>
                     <v-btn
                         v-if="canManage"
@@ -226,7 +225,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                         prepend-icon="mdi-plus"
                         @click="openCreate"
                     >
-                        Add rate
+                        {{ $t('goldRates.addRate') }}
                     </v-btn>
                 </div>
 
@@ -247,28 +246,28 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
             <v-col cols="12">
                 <v-card elevation="2">
                     <v-card-item>
-                        <v-card-title class="text-h6">Today&apos;s rates</v-card-title>
+                        <v-card-title class="text-h6">{{ $t('goldRates.todaysRates') }}</v-card-title>
                         <v-card-subtitle>
-                            Save one rate per gram for the common karats. Newer effective dates become the latest rate.
+                            {{ $t('goldRates.todaysRatesBody') }}
                         </v-card-subtitle>
                     </v-card-item>
                     <v-card-text>
                         <v-row>
-                            <v-col v-for="karat in GOLD_KARATS" :key="karat.value" cols="12" sm="6" md="3">
+                            <v-col v-for="karat in GOLD_KARAT_VALUES" :key="karat" cols="12" sm="6" md="3">
                                 <v-card class="rate-card h-100" variant="outlined">
                                     <v-card-text>
                                         <div class="d-flex align-center justify-space-between mb-3">
-                                            <span class="text-h6 font-weight-bold">{{ karat.label }}</span>
-                                            <v-chip v-if="currentRateExists(karat.value)" color="success" size="small" variant="tonal">
-                                                Saved
+                                            <span class="text-h6 font-weight-bold">{{ karat }}K</span>
+                                            <v-chip v-if="currentRateExists(karat)" color="success" size="small" variant="tonal">
+                                                {{ $t('common.saved') }}
                                             </v-chip>
                                         </div>
                                         <v-text-field
-                                            v-model="todayInputs[karat.value]"
+                                            v-model="todayInputs[karat]"
                                             :disabled="!canManage"
                                             :prefix="currencySymbol"
                                             hide-details
-                                            label="Rate per gram"
+                                            :label="$t('goldRates.ratePerGram')"
                                             min="0.01"
                                             step="0.01"
                                             type="number"
@@ -277,11 +276,11 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                                             v-if="canManage"
                                             class="mt-4"
                                             color="primary"
-                                            :loading="todaySaving[karat.value]"
+                                            :loading="todaySaving[karat]"
                                             block
-                                            @click="saveToday(karat.value)"
+                                            @click="saveToday(karat)"
                                         >
-                                            Save {{ karat.label }}
+                                            {{ $t('goldRates.saveKarat', { karat: `${karat}K` }) }}
                                         </v-btn>
                                     </v-card-text>
                                 </v-card>
@@ -296,8 +295,8 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                     <v-card-item class="pb-0">
                         <div class="d-flex flex-wrap align-center justify-space-between ga-4">
                             <div>
-                                <v-card-title class="text-h6">Rate history</v-card-title>
-                                <v-card-subtitle>All saved effective rates, newest first.</v-card-subtitle>
+                                <v-card-title class="text-h6">{{ $t('goldRates.history') }}</v-card-title>
+                                <v-card-subtitle>{{ $t('goldRates.historyBody') }}</v-card-subtitle>
                             </div>
                             <v-text-field
                                 v-model="search"
@@ -305,7 +304,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                                 clearable
                                 density="compact"
                                 hide-details
-                                label="Search by karat or date"
+                                :label="$t('goldRates.searchPlaceholder')"
                                 prepend-inner-icon="mdi-magnify"
                                 variant="outlined"
                             />
@@ -337,14 +336,14 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                         <template #item.actions="{ item }">
                             <div v-if="canManage" class="d-flex justify-end ga-1">
                                 <v-btn
-                                    aria-label="Edit gold rate"
+                                    :aria-label="$t('goldRates.editRate')"
                                     icon="mdi-pencil-outline"
                                     size="small"
                                     variant="text"
                                     @click="openEdit(item)"
                                 />
                                 <v-btn
-                                    aria-label="Delete gold rate"
+                                    :aria-label="$t('common.delete')"
                                     color="error"
                                     icon="mdi-delete-outline"
                                     size="small"
@@ -360,18 +359,20 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
 
         <v-dialog v-model="dialog" max-width="520">
             <v-card>
-                <v-card-title>{{ editingId ? 'Edit gold rate' : 'Add gold rate' }}</v-card-title>
+                <v-card-title>
+                    {{ editingId ? $t('goldRates.editRate') : $t('goldRates.addRateTitle') }}
+                </v-card-title>
                 <v-card-text>
                     <v-form @submit.prevent="saveDialog">
                         <v-select
                             v-model="editForm.karat"
                             :items="karatItems"
-                            label="Karat"
+                            :label="$t('goldRates.karat')"
                             required
                         />
                         <v-text-field
                             v-model="editForm.rate_per_gram"
-                            label="Rate per gram"
+                            :label="$t('goldRates.ratePerGram')"
                             min="0.01"
                             :prefix="currencySymbol"
                             required
@@ -380,7 +381,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                         />
                         <v-text-field
                             v-model="editForm.effective_date"
-                            label="Effective date"
+                            :label="$t('goldRates.effectiveDate')"
                             max="9999-12-31"
                             required
                             type="date"
@@ -389,22 +390,26 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="dialog = false">Cancel</v-btn>
-                    <v-btn color="primary" :loading="dialogSaving" @click="saveDialog">Save rate</v-btn>
+                    <v-btn variant="text" @click="dialog = false">{{ $t('common.cancel') }}</v-btn>
+                    <v-btn color="primary" :loading="dialogSaving" @click="saveDialog">
+                        {{ $t('goldRates.saveRate') }}
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
 
         <v-dialog v-model="deleteDialog" max-width="420">
             <v-card>
-                <v-card-title>Delete this rate?</v-card-title>
+                <v-card-title>{{ $t('goldRates.deleteTitle') }}</v-card-title>
                 <v-card-text>
-                    This removes the selected historical rate permanently.
+                    {{ $t('goldRates.deleteBody') }}
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="deleteDialog = false">Cancel</v-btn>
-                    <v-btn color="error" :loading="dialogSaving" @click="confirmDelete">Delete</v-btn>
+                    <v-btn variant="text" @click="deleteDialog = false">{{ $t('common.cancel') }}</v-btn>
+                    <v-btn color="error" :loading="dialogSaving" @click="confirmDelete">
+                        {{ $t('common.delete') }}
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

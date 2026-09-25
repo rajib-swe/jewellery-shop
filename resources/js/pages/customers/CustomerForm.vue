@@ -3,11 +3,13 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useCustomersStore } from '../../stores/customers'
+import { useLocaleStore } from '../../stores/locale'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const customerStore = useCustomersStore()
+const localeStore = useLocaleStore()
 const customerId = computed(() => route.params.id ?? null)
 const isEditing = computed(() => customerId.value !== null)
 const canManage = computed(() => authStore.can('manage customers'))
@@ -62,7 +64,7 @@ async function load() {
     try {
         populateForm(await customerStore.fetchCustomer(customerId.value, true))
     } catch {
-        errorMessage.value = customerStore.error ?? 'Unable to load the customer.'
+        errorMessage.value = customerStore.error ?? localeStore.t('customers.loadFailed')
     } finally {
         loading.value = false
     }
@@ -113,15 +115,15 @@ function validateForm() {
     clearFieldErrors()
 
     if (!form.name.trim()) {
-        fieldErrors.name = 'Name is required.'
+        fieldErrors.name = localeStore.t('customers.nameRequired')
     }
 
     if (!form.phone.trim()) {
-        fieldErrors.phone = 'Phone is required.'
+        fieldErrors.phone = localeStore.t('customers.phoneRequired')
     }
 
     if (form.opening_balance === '' || Number(form.opening_balance) < 0) {
-        fieldErrors.opening_balance = 'Enter a nonnegative opening balance.'
+        fieldErrors.opening_balance = localeStore.t('customers.balanceRequired')
     }
 
     return Object.keys(fieldErrors).length === 0
@@ -142,7 +144,7 @@ async function save() {
         await router.push({ name: 'customer-profile', params: { id: customer.id } })
     } catch (error) {
         setValidationErrors(error.response?.data?.errors)
-        errorMessage.value = customerStore.error ?? 'Unable to save the customer.'
+        errorMessage.value = customerStore.error ?? localeStore.t('customers.saveFailed')
     }
 }
 
@@ -165,15 +167,15 @@ onBeforeUnmount(revokePreview)
             <v-col cols="12" lg="9">
                 <div class="d-flex align-center ga-3 mb-6">
                     <v-btn
-                        aria-label="Go back"
+                        :aria-label="$t('common.back')"
                         icon="mdi-arrow-left"
                         variant="text"
                         @click="goBack"
                     />
                     <div>
-                        <v-card-subtitle>Customer directory</v-card-subtitle>
+                        <v-card-subtitle>{{ $t('customers.subtitle') }}</v-card-subtitle>
                         <v-card-title class="text-h4 font-weight-bold pa-0">
-                            {{ isEditing ? 'Edit customer' : 'Add customer' }}
+                            {{ isEditing ? $t('customers.editCustomer') : $t('customers.newCustomer') }}
                         </v-card-title>
                     </div>
                 </div>
@@ -200,7 +202,7 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.name"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.name ? [fieldErrors.name] : []"
-                                        label="Name"
+                                        :label="$t('common.name')"
                                         prepend-inner-icon="mdi-account-outline"
                                         required
                                     />
@@ -210,7 +212,7 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.phone"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.phone ? [fieldErrors.phone] : []"
-                                        label="Phone"
+                                        :label="$t('common.phone')"
                                         placeholder="01712345678"
                                         prepend-inner-icon="mdi-phone-outline"
                                         required
@@ -221,7 +223,7 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.nid"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.nid ? [fieldErrors.nid] : []"
-                                        label="NID"
+                                        :label="$t('customers.nid')"
                                         prepend-inner-icon="mdi-card-account-details-outline"
                                     />
                                 </v-col>
@@ -230,7 +232,7 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.opening_balance"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.opening_balance ? [fieldErrors.opening_balance] : []"
-                                        label="Opening balance"
+                                        :label="$t('customers.openingBalance')"
                                         min="0"
                                         step="0.01"
                                         type="number"
@@ -243,7 +245,7 @@ onBeforeUnmount(revokePreview)
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.address ? [fieldErrors.address] : []"
                                         auto-grow
-                                        label="Address"
+                                        :label="$t('common.address')"
                                         prepend-inner-icon="mdi-map-marker-outline"
                                         rows="2"
                                     />
@@ -254,7 +256,7 @@ onBeforeUnmount(revokePreview)
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.notes ? [fieldErrors.notes] : []"
                                         auto-grow
-                                        label="Notes"
+                                        :label="$t('common.notes')"
                                         prepend-inner-icon="mdi-note-text-outline"
                                         rows="3"
                                     />
@@ -263,7 +265,7 @@ onBeforeUnmount(revokePreview)
 
                             <v-divider class="my-6" />
 
-                            <div class="text-subtitle-1 font-weight-bold mb-3">Customer photo</div>
+                            <div class="text-subtitle-1 font-weight-bold mb-3">{{ $t('customers.photo') }}</div>
                             <v-row align="center">
                                 <v-col cols="12" sm="4" md="3">
                                     <v-img
@@ -283,7 +285,7 @@ onBeforeUnmount(revokePreview)
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.photo ? [fieldErrors.photo] : []"
                                         accept="image/png,image/jpeg,image/webp"
-                                        label="Choose a photo"
+                                        :label="$t('customers.photo')"
                                         prepend-icon="mdi-upload-outline"
                                         show-size
                                         @update:model-value="selectPhoto"
@@ -294,13 +296,13 @@ onBeforeUnmount(revokePreview)
                                         :disabled="!canManage"
                                         color="error"
                                         density="compact"
-                                        label="Remove current photo on save"
+                                        :label="$t('customers.removePhoto')"
                                     />
                                 </v-col>
                             </v-row>
 
                             <div class="d-flex flex-wrap justify-end ga-3 mt-6">
-                                <v-btn variant="text" @click="goBack">Cancel</v-btn>
+                                <v-btn variant="text" @click="goBack">{{ $t('common.cancel') }}</v-btn>
                                 <v-btn
                                     v-if="canManage"
                                     color="primary"
@@ -308,7 +310,7 @@ onBeforeUnmount(revokePreview)
                                     size="large"
                                     type="submit"
                                 >
-                                    {{ isEditing ? 'Save changes' : 'Create customer' }}
+                                    {{ isEditing ? $t('common.saveChanges') : $t('customers.addCustomer') }}
                                 </v-btn>
                             </div>
                         </v-form>

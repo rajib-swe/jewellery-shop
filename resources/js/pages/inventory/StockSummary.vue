@@ -2,17 +2,16 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInventoryStore } from '../../stores/inventory'
-import { KARAT_OPTIONS } from '../../constants/inventory'
+import { useLocaleStore } from '../../stores/locale'
+import { useWeightFormatter } from '../../utils/format'
 
 const router = useRouter()
 const inventoryStore = useInventoryStore()
+const localeStore = useLocaleStore()
+const { formatWeight } = useWeightFormatter()
 const errorMessage = computed(() => inventoryStore.error)
 
-const karatLabel = (value) => KARAT_OPTIONS.find((option) => option.value === value)?.title ?? `${value}K`
-
-function formatWeight(value) {
-    return `${Number(value || 0).toFixed(3)} g`
-}
+const karatLabel = (value) => `${value}K`
 
 async function load() {
     inventoryStore.clearError()
@@ -33,10 +32,10 @@ onMounted(load)
             <v-col cols="12">
                 <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6">
                     <div>
-                        <v-card-subtitle>Gold inventory</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">Stock summary</v-card-title>
+                        <v-card-subtitle>{{ $t('inventory.itemsSubtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('inventory.summaryTitle') }}</v-card-title>
                         <v-card-text class="text-medium-emphasis pa-0 mt-1">
-                            Current in-stock weight and item count by karat.
+                            {{ $t('inventory.summaryIntro') }}
                         </v-card-text>
                     </div>
                     <v-btn
@@ -44,7 +43,7 @@ onMounted(load)
                         variant="outlined"
                         @click="router.push({ name: 'items' })"
                     >
-                        View items
+                        {{ $t('inventory.itemsTitle') }}
                     </v-btn>
                 </div>
 
@@ -66,7 +65,7 @@ onMounted(load)
                 <v-card color="primary" variant="tonal">
                     <v-card-text>
                         <v-icon icon="mdi-package-variant-closed" size="30" />
-                        <div class="text-caption mt-3">In-stock items</div>
+                        <div class="text-caption mt-3">{{ $t('inventory.totalItems') }}</div>
                         <div class="text-h4 font-weight-bold">{{ inventoryStore.summary.total_items }}</div>
                     </v-card-text>
                 </v-card>
@@ -75,7 +74,7 @@ onMounted(load)
                 <v-card color="secondary" variant="tonal">
                     <v-card-text>
                         <v-icon icon="mdi-scale-balance" size="30" />
-                        <div class="text-caption mt-3">Total net weight</div>
+                        <div class="text-caption mt-3">{{ $t('inventory.totalNetWeight') }}</div>
                         <div class="text-h4 font-weight-bold">{{ formatWeight(inventoryStore.summary.total_net_weight) }}</div>
                     </v-card-text>
                 </v-card>
@@ -85,8 +84,8 @@ onMounted(load)
                     <v-card-text class="d-flex align-center ga-3">
                         <v-icon color="primary" icon="mdi-chart-donut" size="30" />
                         <div>
-                            <div class="text-caption">Summary basis</div>
-                            <div class="text-subtitle-1 font-weight-bold">In-stock items only</div>
+                            <div class="text-caption">{{ $t('inventory.totalItems') }}</div>
+                            <div class="text-subtitle-1 font-weight-bold">{{ $t('options.inStock') }}</div>
                         </div>
                     </v-card-text>
                 </v-card>
@@ -95,16 +94,16 @@ onMounted(load)
             <v-col cols="12">
                 <v-card elevation="2">
                     <v-card-item>
-                        <v-card-title class="text-h6">Weight by karat</v-card-title>
-                        <v-card-subtitle>Only items currently marked in stock are included.</v-card-subtitle>
+                        <v-card-title class="text-h6">{{ $t('inventory.netWeight') }}</v-card-title>
+                        <v-card-subtitle>{{ $t('inventory.summaryIntro') }}</v-card-subtitle>
                     </v-card-item>
                     <v-progress-linear v-if="inventoryStore.loadingSummary" indeterminate />
                     <v-table class="d-none d-sm-table">
                         <thead>
                             <tr>
-                                <th>Karat</th>
-                                <th class="text-right">Item count</th>
-                                <th class="text-right">Net weight</th>
+                                <th>{{ $t('inventory.karat') }}</th>
+                                <th class="text-right">{{ $t('inventory.itemCount') }}</th>
+                                <th class="text-right">{{ $t('inventory.netWeight') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -124,7 +123,9 @@ onMounted(load)
                             <template #append>
                                 <div class="text-right">
                                     <div class="font-weight-bold">{{ formatWeight(row.total_net_weight) }}</div>
-                                    <div class="text-caption text-medium-emphasis">{{ row.item_count }} items</div>
+                                    <div class="text-caption text-medium-emphasis">
+                                        {{ row.item_count }} {{ $t('inventory.totalItems') }}
+                                    </div>
                                 </div>
                             </template>
                         </v-list-item>

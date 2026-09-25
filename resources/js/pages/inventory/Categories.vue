@@ -2,9 +2,11 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useInventoryStore } from '../../stores/inventory'
+import { useLocaleStore } from '../../stores/locale'
 
 const authStore = useAuthStore()
 const inventoryStore = useInventoryStore()
+const localeStore = useLocaleStore()
 const canManage = computed(() => authStore.can('manage inventory'))
 const dialog = ref(false)
 const deleteDialog = ref(false)
@@ -44,7 +46,7 @@ async function load() {
     try {
         await inventoryStore.fetchCategories()
     } catch {
-        errorMessage.value = inventoryStore.error ?? 'Unable to load categories.'
+        errorMessage.value = inventoryStore.error ?? localeStore.t('inventory.loadFailed')
     }
 }
 
@@ -52,7 +54,7 @@ async function save() {
     errorMessage.value = ''
 
     if (!form.name.trim()) {
-        errorMessage.value = 'Category name is required.'
+        errorMessage.value = localeStore.t('customers.nameRequired')
         return
     }
 
@@ -63,7 +65,9 @@ async function save() {
         }, editingId.value)
         dialog.value = false
     } catch (error) {
-        errorMessage.value = error.response?.data?.message ?? inventoryStore.error ?? 'Unable to save the category.'
+        errorMessage.value = error.response?.data?.message
+            ?? inventoryStore.error
+            ?? localeStore.t('inventory.saveFailed')
     }
 }
 
@@ -79,7 +83,9 @@ async function confirmDelete() {
         deleteDialog.value = false
         deleteTarget.value = null
     } catch (error) {
-        errorMessage.value = error.response?.data?.message ?? inventoryStore.error ?? 'Unable to delete the category.'
+        errorMessage.value = error.response?.data?.message
+            ?? inventoryStore.error
+            ?? localeStore.t('inventory.deleteFailed')
     }
 }
 
@@ -92,10 +98,10 @@ onMounted(load)
             <v-col cols="12">
                 <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6">
                     <div>
-                        <v-card-subtitle>Item catalog</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">Categories</v-card-title>
+                        <v-card-subtitle>{{ $t('inventory.itemsSubtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('inventory.categoriesTitle') }}</v-card-title>
                         <v-card-text class="text-medium-emphasis pa-0 mt-1">
-                            Organize rings, necklaces, bangles, and other jewellery.
+                            {{ $t('inventory.categoriesIntro') }}
                         </v-card-text>
                     </div>
                     <v-btn
@@ -105,7 +111,7 @@ onMounted(load)
                         size="large"
                         @click="openCreate"
                     >
-                        Add category
+                        {{ $t('inventory.addCategory') }}
                     </v-btn>
                 </div>
 
@@ -140,7 +146,7 @@ onMounted(load)
                                     <div class="category-copy">
                                         <v-card-title class="text-h6 pa-0">{{ category.name }}</v-card-title>
                                         <v-card-subtitle class="pa-0 mt-2">
-                                            {{ category.description || 'No description' }}
+                                            {{ category.description || $t('common.noData') }}
                                         </v-card-subtitle>
                                     </div>
                                     <v-icon color="primary" icon="mdi-shape-outline" />
@@ -148,14 +154,14 @@ onMounted(load)
                             </v-card-text>
                             <v-card-actions v-if="canManage">
                                 <v-btn
-                                    aria-label="Edit category"
+                                    :aria-label="$t('inventory.editCategory')"
                                     icon="mdi-pencil-outline"
                                     size="small"
                                     variant="text"
                                     @click="openEdit(category)"
                                 />
                                 <v-btn
-                                    aria-label="Delete category"
+                                    :aria-label="$t('common.delete')"
                                     color="error"
                                     icon="mdi-delete-outline"
                                     size="small"
@@ -170,49 +176,55 @@ onMounted(load)
                 <v-empty-state
                     v-else-if="!inventoryStore.loadingCategories"
                     icon="mdi-shape-outline"
-                    title="No categories yet"
-                    text="Add a category before creating inventory items."
+                    :title="$t('inventory.noCategories')"
+                    :text="$t('inventory.categoriesIntro')"
                 />
             </v-col>
         </v-row>
 
         <v-dialog v-model="dialog" max-width="520">
             <v-card>
-                <v-card-title>{{ editingId ? 'Edit category' : 'Add category' }}</v-card-title>
+                <v-card-title>
+                    {{ editingId ? $t('inventory.editCategory') : $t('inventory.newCategory') }}
+                </v-card-title>
                 <v-card-text>
                     <v-text-field
                         v-model="form.name"
                         autofocus
-                        label="Name"
+                        :label="$t('common.name')"
                         prepend-inner-icon="mdi-shape-outline"
                         required
                     />
                     <v-textarea
                         v-model="form.description"
                         auto-grow
-                        label="Description"
+                        :label="$t('inventory.description')"
                         prepend-inner-icon="mdi-text-box-outline"
                         rows="3"
                     />
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="dialog = false">Cancel</v-btn>
-                    <v-btn color="primary" :loading="inventoryStore.saving" @click="save">Save category</v-btn>
+                    <v-btn variant="text" @click="dialog = false">{{ $t('common.cancel') }}</v-btn>
+                    <v-btn color="primary" :loading="inventoryStore.saving" @click="save">
+                        {{ $t('common.save') }}
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
 
         <v-dialog v-model="deleteDialog" max-width="420">
             <v-card>
-                <v-card-title>Delete this category?</v-card-title>
+                <v-card-title>{{ $t('inventory.deleteTitle', { name: deleteTarget?.name }) }}</v-card-title>
                 <v-card-text>
-                    {{ deleteTarget?.name }} can only be deleted when it has no inventory items.
+                    {{ $t('inventory.deleteBody', { name: deleteTarget?.name }) }}
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="deleteDialog = false">Cancel</v-btn>
-                    <v-btn color="error" :loading="inventoryStore.saving" @click="confirmDelete">Delete</v-btn>
+                    <v-btn variant="text" @click="deleteDialog = false">{{ $t('common.cancel') }}</v-btn>
+                    <v-btn color="error" :loading="inventoryStore.saving" @click="confirmDelete">
+                        {{ $t('common.delete') }}
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

@@ -43,3 +43,12 @@
 - Voiding a sale is a full reversal: items go back to `in_stock` with an `in` movement, exchange scrap items are deleted, the payment rows are removed, `paid` and `due` are zeroed, and the sale is kept for audit with `voided_by`, `voided_at`, and `void_reason`. A voided sale refuses further payments.
 - `admin` and `manager` can view sales, record sales, and record due payments; `void sales` is the separate permission that guards voiding. `cashier` can view sales only.
 - `CustomerService::history()` now returns the customer's real sales and payments, and `due_balance` is the opening balance plus the due of every non-void sale. The customer profile Sales and Payments tabs are still wired in Step 8.
+
+## Interface language
+
+- The shop interface is bilingual with **Bangla as the default**; English is selectable from the language toggle in the top bar. The choice persists in `localStorage` under `jewellery-shop.locale` and sets `<html lang>`.
+- Translations live in `resources/js/lang/bn.js` and `resources/js/lang/en.js` as nested key objects. `useLocaleStore()` resolves dotted keys, interpolates `{name}` placeholders, and falls back to Bangla (not the raw key) when a translation is missing in English.
+- No `vue-i18n` dependency was added; `$t` is registered as a global property in `main.js` and a `localeStore.t` is available in `<script setup>` for reactive values such as data-table headers and navigation arrays.
+- Option lists (karat, item status, making type, stock movement, payment method, sale status) are now value-only constants plus a `useOptionLabels()` composable in `resources/js/constants/options.js` that builds translated labels reactively. Static option arrays would freeze the language at module load.
+- Weight and money formatting is centralised in `resources/js/utils/format.js` (`useWeightFormatter`, `useCurrency`) so the shop's `weight_unit` setting and `units.gram` / `units.vori` labels apply identically on every screen.
+- Backend validation messages are still returned in English and surface as-is; the client only translates its own strings. Server message localisation is a separate piece of work.

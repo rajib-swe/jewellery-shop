@@ -205,7 +205,7 @@ onMounted(async () => {
                 <h3>
                     সর্বশেষ {{ tableDate || 'আজকের' }} বাংলাদেশ জুয়েলার্স অ্যাসোসিয়েশন (বাজুস) নির্ধারিত স্বর্ণের দামের তালিকা
                 </h3>
-                <p>Bangladesh Jewellers Association (BAJUS) gold price in Bangladesh today by bhori, gram, ana and rati.</p>
+                <p>{{ $t('public.priceTable.subtitle') }}</p>
             </div>
 
             <div v-if="tableRows.length" class="reference-table-scroll">
@@ -231,10 +231,10 @@ onMounted(async () => {
                 </table>
             </div>
             <div v-else class="reference-table-loading">
-                Loading live prices…
+                {{ $t('public.priceTable.loading') }}
             </div>
 
-            <div class="reference-table-source">দামের তথ্যসূত্র: গোল্ডআর · বাজার দাম</div>
+            <div class="reference-table-source">{{ $t('public.priceTable.source') }}</div>
         </div>
     </div>
 </template>

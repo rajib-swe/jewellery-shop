@@ -3,12 +3,15 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useInventoryStore } from '../../stores/inventory'
-import { KARAT_OPTIONS, MAKING_TYPE_OPTIONS } from '../../constants/inventory'
+import { useLocaleStore } from '../../stores/locale'
+import { useOptionLabels } from '../../constants/options'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const inventoryStore = useInventoryStore()
+const localeStore = useLocaleStore()
+const { karatOptions: karatItems, makingTypeOptions: makingTypeItems } = useOptionLabels()
 const itemId = computed(() => route.params.id ?? null)
 const isEditing = computed(() => itemId.value !== null)
 const canManage = computed(() => authStore.can('manage inventory'))
@@ -81,7 +84,7 @@ async function load() {
             populateForm(await inventoryStore.fetchItem(itemId.value, true))
         }
     } catch {
-        errorMessage.value = inventoryStore.error ?? 'Unable to load the inventory item.'
+        errorMessage.value = inventoryStore.error ?? localeStore.t('inventory.loadFailed')
     } finally {
         loading.value = false
     }
@@ -112,27 +115,27 @@ function validateForm() {
     clearFieldErrors()
 
     if (!form.category_id) {
-        fieldErrors.category_id = 'Category is required.'
+        fieldErrors.category_id = localeStore.t('inventory.selectCategory')
     }
 
     if (!form.name.trim()) {
-        fieldErrors.name = 'Name is required.'
+        fieldErrors.name = localeStore.t('common.name')
     }
 
     if (!form.gross_weight || Number(form.gross_weight) <= 0) {
-        fieldErrors.gross_weight = 'Gross weight must be greater than zero.'
+        fieldErrors.gross_weight = localeStore.t('inventory.grossWeight')
     }
 
     if (form.stone_weight !== '' && (Number(form.stone_weight) < 0 || Number(form.stone_weight) > Number(form.gross_weight || 0))) {
-        fieldErrors.stone_weight = 'Stone weight cannot exceed gross weight.'
+        fieldErrors.stone_weight = localeStore.t('inventory.stoneWeight')
     }
 
     if (form.making_value === '' || Number(form.making_value) < 0) {
-        fieldErrors.making_value = 'Making value cannot be negative.'
+        fieldErrors.making_value = localeStore.t('inventory.makingValue')
     }
 
     if (form.stone_price === '' || Number(form.stone_price) < 0) {
-        fieldErrors.stone_price = 'Stone price cannot be negative.'
+        fieldErrors.stone_price = localeStore.t('inventory.stonePrice')
     }
 
     return Object.keys(fieldErrors).length === 0
@@ -176,7 +179,9 @@ async function save() {
         await router.push({ name: 'items' })
     } catch (error) {
         setValidationErrors(error.response?.data?.errors)
-        errorMessage.value = error.response?.data?.message ?? inventoryStore.error ?? 'Unable to save the inventory item.'
+        errorMessage.value = error.response?.data?.message
+            ?? inventoryStore.error
+            ?? localeStore.t('inventory.saveFailed')
     }
 }
 
@@ -193,11 +198,11 @@ onBeforeUnmount(revokePreview)
         <v-row justify="center">
             <v-col cols="12" lg="9">
                 <div class="d-flex align-center ga-3 mb-6">
-                    <v-btn aria-label="Back to items" icon="mdi-arrow-left" variant="text" @click="goBack" />
+                    <v-btn :aria-label="$t('common.back')" icon="mdi-arrow-left" variant="text" @click="goBack" />
                     <div>
-                        <v-card-subtitle>Gold inventory</v-card-subtitle>
+                        <v-card-subtitle>{{ $t('inventory.itemsSubtitle') }}</v-card-subtitle>
                         <v-card-title class="text-h4 font-weight-bold pa-0">
-                            {{ isEditing ? 'Edit item' : 'Add item' }}
+                            {{ isEditing ? $t('inventory.editItem') : $t('inventory.addItem') }}
                         </v-card-title>
                     </div>
                 </div>
@@ -225,7 +230,7 @@ onBeforeUnmount(revokePreview)
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.category_id ? [fieldErrors.category_id] : []"
                                         :items="categoryItems"
-                                        label="Category"
+                                        :label="$t('inventory.selectCategory')"
                                         prepend-inner-icon="mdi-shape-outline"
                                         required
                                     />
@@ -235,9 +240,8 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.name"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.name ? [fieldErrors.name] : []"
-                                        label="Item name"
-                                        prepend-inner-icon="mdi-tag-text-outline"
-                                        required
+                                        :label="$t('inventory.item')"
+                                        prepend-inner-icon="mdi-tag-text-outline"                                        required
                                     />
                                 </v-col>
                                 <v-col cols="12" sm="4">
@@ -245,8 +249,8 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.karat"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.karat ? [fieldErrors.karat] : []"
-                                        :items="KARAT_OPTIONS"
-                                        label="Karat"
+                                        :items="karatItems"
+                                        :label="$t('inventory.selectKarat')"
                                         required
                                     />
                                 </v-col>
@@ -255,11 +259,11 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.gross_weight"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.gross_weight ? [fieldErrors.gross_weight] : []"
-                                        label="Gross weight"
+                                        :label="$t('inventory.grossWeight')"
                                         min="0.001"
                                         required
                                         step="0.001"
-                                        suffix="g"
+                                        :suffix="$t('units.gram')"
                                         type="number"
                                     />
                                 </v-col>
@@ -268,10 +272,10 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.stone_weight"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.stone_weight ? [fieldErrors.stone_weight] : []"
-                                        label="Stone weight"
+                                        :label="$t('inventory.stoneWeight')"
                                         min="0"
                                         step="0.001"
-                                        suffix="g"
+                                        :suffix="$t('units.gram')"
                                         type="number"
                                     />
                                 </v-col>
@@ -280,8 +284,8 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.making_type"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.making_type ? [fieldErrors.making_type] : []"
-                                        :items="MAKING_TYPE_OPTIONS"
-                                        label="Making type"
+                                        :items="makingTypeItems"
+                                        :label="$t('inventory.makingType')"
                                         required
                                     />
                                 </v-col>
@@ -290,7 +294,7 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.making_value"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.making_value ? [fieldErrors.making_value] : []"
-                                        label="Making value"
+                                        :label="$t('inventory.makingValue')"
                                         min="0"
                                         step="0.01"
                                         type="number"
@@ -302,7 +306,7 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.stone_price"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.stone_price ? [fieldErrors.stone_price] : []"
-                                        label="Stone price"
+                                        :label="$t('inventory.stonePrice')"
                                         min="0"
                                         step="0.01"
                                         type="number"
@@ -313,7 +317,7 @@ onBeforeUnmount(revokePreview)
                                         v-model="form.barcode"
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.barcode ? [fieldErrors.barcode] : []"
-                                        label="Barcode"
+                                        :label="$t('inventory.barcode')"
                                         prepend-inner-icon="mdi-barcode"
                                     />
                                 </v-col>
@@ -321,17 +325,17 @@ onBeforeUnmount(revokePreview)
                                     <v-text-field
                                         :model-value="netWeightPreview"
                                         disabled
-                                        hint="Calculated on the server"
-                                        label="Net weight"
+                                        :hint="$t('inventory.netWeightPreview')"
+                                        :label="$t('inventory.netWeight')"
                                         persistent-hint
-                                        suffix="g"
+                                        :suffix="$t('units.gram')"
                                     />
                                 </v-col>
                             </v-row>
 
                             <v-divider class="my-6" />
 
-                            <div class="text-subtitle-1 font-weight-bold mb-3">Item image</div>
+                            <div class="text-subtitle-1 font-weight-bold mb-3">{{ $t('inventory.image') }}</div>
                             <v-row align="center">
                                 <v-col cols="12" sm="4" md="3">
                                     <v-img
@@ -351,7 +355,7 @@ onBeforeUnmount(revokePreview)
                                         :disabled="!canManage"
                                         :error-messages="fieldErrors.image ? [fieldErrors.image] : []"
                                         accept="image/png,image/jpeg,image/webp"
-                                        label="Choose an image"
+                                        :label="$t('inventory.image')"
                                         prepend-icon="mdi-upload-outline"
                                         show-size
                                         @update:model-value="selectImage"
@@ -362,13 +366,13 @@ onBeforeUnmount(revokePreview)
                                         :disabled="!canManage"
                                         color="error"
                                         density="compact"
-                                        label="Remove current image on save"
+                                        :label="$t('inventory.removeImage')"
                                     />
                                 </v-col>
                             </v-row>
 
                             <div class="d-flex flex-wrap justify-end ga-3 mt-6">
-                                <v-btn variant="text" @click="goBack">Cancel</v-btn>
+                                <v-btn variant="text" @click="goBack">{{ $t('common.cancel') }}</v-btn>
                                 <v-btn
                                     v-if="canManage"
                                     color="primary"
@@ -376,7 +380,7 @@ onBeforeUnmount(revokePreview)
                                     size="large"
                                     type="submit"
                                 >
-                                    {{ isEditing ? 'Save changes' : 'Add item' }}
+                                    {{ isEditing ? $t('common.saveChanges') : $t('inventory.addItem') }}
                                 </v-btn>
                             </div>
                         </v-form>

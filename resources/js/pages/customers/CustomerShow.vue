@@ -3,25 +3,26 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useCustomersStore } from '../../stores/customers'
-import { useSettingsStore } from '../../stores/settings'
+import { useLocaleStore } from '../../stores/locale'
+import { useCurrency } from '../../utils/format'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const customerStore = useCustomersStore()
-const settingsStore = useSettingsStore()
+const localeStore = useLocaleStore()
+const currencySymbol = useCurrency()
 const customerId = computed(() => route.params.id)
 const activeTab = ref('overview')
 const errorMessage = ref('')
 const canManage = computed(() => authStore.can('manage customers'))
-const currencySymbol = computed(() => settingsStore.settings.currency_symbol || '৳')
 
-const tabs = [
-    { value: 'overview', label: 'Overview', icon: 'mdi-account-outline' },
-    { value: 'sales', label: 'Sales', icon: 'mdi-receipt-text-outline' },
-    { value: 'pawns', label: 'Pawns', icon: 'mdi-handshake-outline' },
-    { value: 'payments', label: 'Payments', icon: 'mdi-cash-multiple' },
-]
+const tabs = computed(() => [
+    { value: 'overview', label: localeStore.t('customers.overview'), icon: 'mdi-account-outline' },
+    { value: 'sales', label: localeStore.t('customers.sales'), icon: 'mdi-receipt-text-outline' },
+    { value: 'pawns', label: localeStore.t('customers.pawns'), icon: 'mdi-handshake-outline' },
+    { value: 'payments', label: localeStore.t('customers.payments'), icon: 'mdi-cash-multiple' },
+])
 
 const tabItems = computed(() => ({
     sales: customerStore.history.sales,
@@ -29,11 +30,13 @@ const tabItems = computed(() => ({
     payments: customerStore.history.payments,
 }))
 
-const tabEmptyText = {
-    sales: 'Sales will appear here when the sale module is connected.',
-    pawns: 'Pawns will appear here when the pawn module is connected.',
-    payments: 'Payments will appear here when the accounts module is connected.',
-}
+const tabEmptyText = computed(() => ({
+    sales: localeStore.t('customers.noSales'),
+    pawns: localeStore.t('customers.noPawns'),
+    payments: localeStore.t('customers.noPayments'),
+}))
+
+const notProvided = computed(() => localeStore.t('common.noData'))
 
 function formatMoney(value) {
     return Number(value || 0).toLocaleString('en-US', {
@@ -73,10 +76,9 @@ async function load() {
         await Promise.all([
             customerStore.fetchCustomer(customerId.value, true),
             customerStore.fetchHistory(customerId.value, true),
-            settingsStore.fetchSettings(),
         ])
     } catch {
-        errorMessage.value = customerStore.error ?? settingsStore.error ?? 'Unable to load the customer.'
+        errorMessage.value = customerStore.error ?? localeStore.t('customers.loadFailed')
     }
 }
 
@@ -98,14 +100,14 @@ onMounted(load)
             <v-col cols="12" lg="10">
                 <div class="d-flex align-center ga-3 mb-6">
                     <v-btn
-                        aria-label="Back to customers"
+                        :aria-label="$t('common.back')"
                         icon="mdi-arrow-left"
                         variant="text"
                         @click="goBack"
                     />
                     <div>
-                        <v-card-subtitle>Customer profile</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold pa-0">Customer details</v-card-title>
+                        <v-card-subtitle>{{ $t('customers.profile') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold pa-0">{{ $t('customers.title') }}</v-card-title>
                     </div>
                 </div>
 
@@ -153,7 +155,7 @@ onMounted(load)
                                     prepend-icon="mdi-pencil-outline"
                                     :to="{ name: 'customer-edit', params: { id: customerId } }"
                                 >
-                                    Edit
+                                    {{ $t('common.edit') }}
                                 </v-btn>
                             </div>
                         </v-card-text>
@@ -194,7 +196,7 @@ onMounted(load)
                                         <v-card class="h-100" color="primary" variant="tonal">
                                             <v-card-text>
                                                 <v-icon icon="mdi-cash-multiple" size="28" />
-                                                <div class="text-caption mt-3">Due balance</div>
+                                                <div class="text-caption mt-3">{{ $t('customers.dueBalance') }}</div>
                                                 <div class="text-h5 font-weight-bold">
                                                     {{ currencySymbol }}{{ formatMoney(customerStore.history.due_balance) }}
                                                 </div>
@@ -205,9 +207,9 @@ onMounted(load)
                                         <v-card class="h-100" variant="outlined">
                                             <v-card-text>
                                                 <v-icon icon="mdi-card-account-details-outline" size="28" />
-                                                <div class="text-caption mt-3">NID</div>
+                                                <div class="text-caption mt-3">{{ $t('customers.nid') }}</div>
                                                 <div class="text-subtitle-1 font-weight-medium">
-                                                    {{ customerStore.current.nid || 'Not provided' }}
+                                                    {{ customerStore.current.nid || notProvided }}
                                                 </div>
                                             </v-card-text>
                                         </v-card>
@@ -216,7 +218,7 @@ onMounted(load)
                                         <v-card class="h-100" variant="outlined">
                                             <v-card-text>
                                                 <v-icon icon="mdi-calendar-plus-outline" size="28" />
-                                                <div class="text-caption mt-3">Added</div>
+                                                <div class="text-caption mt-3">{{ $t('common.date') }}</div>
                                                 <div class="text-subtitle-1 font-weight-medium">
                                                     {{ formatDate(customerStore.current.created_at) }}
                                                 </div>
@@ -224,15 +226,15 @@ onMounted(load)
                                         </v-card>
                                     </v-col>
                                     <v-col cols="12" md="6">
-                                        <div class="text-subtitle-1 font-weight-bold mb-2">Address</div>
+                                        <div class="text-subtitle-1 font-weight-bold mb-2">{{ $t('common.address') }}</div>
                                         <div class="text-body-2 text-medium-emphasis">
-                                            {{ customerStore.current.address || 'Not provided' }}
+                                            {{ customerStore.current.address || notProvided }}
                                         </div>
                                     </v-col>
                                     <v-col cols="12" md="6">
-                                        <div class="text-subtitle-1 font-weight-bold mb-2">Notes</div>
+                                        <div class="text-subtitle-1 font-weight-bold mb-2">{{ $t('common.notes') }}</div>
                                         <div class="text-body-2 text-medium-emphasis">
-                                            {{ customerStore.current.notes || 'No notes added.' }}
+                                            {{ customerStore.current.notes || notProvided }}
                                         </div>
                                     </v-col>
                                 </v-row>
@@ -241,7 +243,7 @@ onMounted(load)
                             <v-window-item v-for="tab in tabs.slice(1)" :key="tab.value" :value="tab.value">
                                 <v-empty-state
                                     :icon="tab.icon"
-                                    :title="`No ${tab.label.toLowerCase()} yet`"
+                                    :title="tabEmptyText[tab.value]"
                                     :text="tabEmptyText[tab.value]"
                                 />
                             </v-window-item>
@@ -252,11 +254,11 @@ onMounted(load)
                 <v-empty-state
                     v-else-if="!customerStore.loadingCurrent"
                     icon="mdi-account-off-outline"
-                    title="Customer not found"
-                    text="The customer may have been removed."
+                    :title="$t('common.noData')"
+                    :text="notProvided"
                 >
                     <template #actions>
-                        <v-btn color="primary" @click="goBack">Back to customers</v-btn>
+                        <v-btn color="primary" @click="goBack">{{ $t('nav.customers') }}</v-btn>
                     </template>
                 </v-empty-state>
             </v-col>

@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useCustomersStore } from '../stores/customers'
+import { useLocaleStore } from '../stores/locale'
 
 const props = defineProps({
     modelValue: {
@@ -10,7 +11,7 @@ const props = defineProps({
     },
     label: {
         type: String,
-        default: 'Customer',
+        default: '',
     },
     disabled: {
         type: Boolean,
@@ -21,6 +22,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'created'])
 const authStore = useAuthStore()
 const customerStore = useCustomersStore()
+const localeStore = useLocaleStore()
+const pickerLabel = computed(() => props.label || localeStore.t('customers.pickerLabel'))
 const selectedCustomer = ref(null)
 const search = ref('')
 const results = ref([])
@@ -98,7 +101,7 @@ async function quickAdd() {
     quickError.value = ''
 
     if (!quickForm.name.trim() || !quickForm.phone.trim()) {
-        quickError.value = 'Name and phone are required.'
+        quickError.value = localeStore.t('customers.nameRequired')
         return
     }
 
@@ -114,7 +117,7 @@ async function quickAdd() {
         emit('created', customer)
         quickDialog.value = false
     } catch (error) {
-        quickError.value = error.response?.data?.message ?? 'Unable to create the customer.'
+        quickError.value = error.response?.data?.message ?? localeStore.t('customers.quickAddFailed')
     } finally {
         quickSaving.value = false
     }
@@ -150,7 +153,7 @@ watch(
                 v-model="selectedCustomer"
                 :disabled="disabled"
                 :items="items"
-                :label="label"
+                :label="pickerLabel"
                 :loading="loading"
                 clearable
                 density="comfortable"
@@ -158,7 +161,7 @@ watch(
                 item-title="title"
                 item-subtitle="subtitle"
                 item-value="id"
-                no-data-text="Type at least two characters to search"
+                :no-data-text="$t('customers.pickerNoData')"
                 return-object
                 variant="outlined"
                 @update:search="searchCustomers"
@@ -170,7 +173,7 @@ watch(
                 <template #append-inner>
                     <v-btn
                         v-if="canQuickAdd"
-                        aria-label="Add a new customer"
+                        :aria-label="$t('customers.addNewCustomer')"
                         icon="mdi-account-plus-outline"
                         size="small"
                         variant="text"
@@ -182,7 +185,7 @@ watch(
 
         <v-dialog v-model="quickDialog" max-width="480">
             <v-card>
-                <v-card-title>Quick add customer</v-card-title>
+                <v-card-title>{{ $t('customers.quickAdd') }}</v-card-title>
                 <v-card-text>
                     <v-alert
                         v-if="quickError"
@@ -197,13 +200,13 @@ watch(
                     <v-text-field
                         v-model="quickForm.name"
                         autofocus
-                        label="Name"
+                        :label="$t('common.name')"
                         prepend-inner-icon="mdi-account-outline"
                         required
                     />
                     <v-text-field
                         v-model="quickForm.phone"
-                        label="Phone"
+                        :label="$t('common.phone')"
                         placeholder="01712345678"
                         prepend-inner-icon="mdi-phone-outline"
                         required
@@ -211,8 +214,10 @@ watch(
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="quickDialog = false">Cancel</v-btn>
-                    <v-btn color="primary" :loading="quickSaving" @click="quickAdd">Add customer</v-btn>
+                    <v-btn variant="text" @click="quickDialog = false">{{ $t('common.cancel') }}</v-btn>
+                    <v-btn color="primary" :loading="quickSaving" @click="quickAdd">
+                        {{ $t('customers.addCustomer') }}
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

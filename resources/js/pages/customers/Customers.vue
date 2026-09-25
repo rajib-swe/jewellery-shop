@@ -3,14 +3,15 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useCustomersStore } from '../../stores/customers'
-import { useSettingsStore } from '../../stores/settings'
+import { useLocaleStore } from '../../stores/locale'
+import { useCurrency } from '../../utils/format'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const customerStore = useCustomersStore()
-const settingsStore = useSettingsStore()
+const localeStore = useLocaleStore()
+const currencySymbol = useCurrency()
 const canManage = computed(() => authStore.can('manage customers'))
-const currencySymbol = computed(() => settingsStore.settings.currency_symbol || '৳')
 const page = ref(1)
 const perPage = ref(15)
 const search = ref('')
@@ -19,13 +20,13 @@ const deleteDialog = ref(false)
 const deleteTarget = ref(null)
 let searchTimer = null
 
-const headers = [
-    { title: 'Customer', key: 'name' },
-    { title: 'Phone', key: 'phone' },
-    { title: 'Code', key: 'code' },
-    { title: 'Due balance', key: 'opening_balance', align: 'end' },
+const headers = computed(() => [
+    { title: localeStore.t('customers.pickerLabel'), key: 'name' },
+    { title: localeStore.t('common.phone'), key: 'phone' },
+    { title: localeStore.t('common.code'), key: 'code' },
+    { title: localeStore.t('customers.dueBalance'), key: 'opening_balance', align: 'end' },
     { title: '', key: 'actions', sortable: false, align: 'end', width: 112 },
-]
+])
 
 function formatMoney(value) {
     return Number(value || 0).toLocaleString('en-US', {
@@ -45,10 +46,9 @@ async function load() {
                 per_page: perPage.value,
                 search: search.value || undefined,
             }),
-            settingsStore.fetchSettings(),
         ])
     } catch {
-        errorMessage.value = customerStore.error ?? settingsStore.error ?? 'Unable to load customers.'
+        errorMessage.value = customerStore.error ?? localeStore.t('customers.loadFailed')
     }
 }
 
@@ -62,7 +62,7 @@ async function fetchCustomers(force = false) {
             search: search.value || undefined,
         }, force)
     } catch {
-        errorMessage.value = customerStore.error ?? 'Unable to load customers.'
+        errorMessage.value = customerStore.error ?? localeStore.t('customers.loadFailed')
     }
 }
 
@@ -108,7 +108,7 @@ async function confirmDelete() {
         deleteTarget.value = null
         await fetchCustomers(true)
     } catch {
-        errorMessage.value = customerStore.error ?? 'Unable to delete the customer.'
+        errorMessage.value = customerStore.error ?? localeStore.t('customers.deleteFailed')
     }
 }
 
@@ -136,10 +136,10 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
             <v-col cols="12">
                 <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6">
                     <div>
-                        <v-card-subtitle>Customer directory</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">Customers</v-card-title>
+                        <v-card-subtitle>{{ $t('customers.subtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('customers.title') }}</v-card-title>
                         <v-card-text class="text-medium-emphasis pa-0 mt-1">
-                            Keep customer details, balances, and activity in one place.
+                            {{ $t('customers.intro') }}
                         </v-card-text>
                     </div>
                     <v-btn
@@ -149,7 +149,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                         size="large"
                         @click="openCreate"
                     >
-                        Add customer
+                        {{ $t('customers.addCustomer') }}
                     </v-btn>
                 </div>
 
@@ -170,8 +170,10 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                     <v-card-item class="pb-0">
                         <div class="d-flex flex-wrap align-center justify-space-between ga-4">
                             <div>
-                                <v-card-title class="text-h6">Customer records</v-card-title>
-                                <v-card-subtitle>{{ customerStore.meta.total }} total</v-card-subtitle>
+                                <v-card-title class="text-h6">{{ $t('customers.title') }}</v-card-title>
+                                <v-card-subtitle>
+                                    {{ customerStore.meta.total }} {{ $t('customers.title') }}
+                                </v-card-subtitle>
                             </div>
                             <v-text-field
                                 v-model="search"
@@ -179,7 +181,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                                 clearable
                                 density="comfortable"
                                 hide-details
-                                label="Search name, phone, NID, or code"
+                                :label="$t('customers.searchPlaceholder')"
                                 prepend-inner-icon="mdi-magnify"
                                 variant="outlined"
                             />
@@ -232,7 +234,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                         <template #item.actions="{ item }">
                             <div class="d-flex justify-end ga-1">
                                 <v-btn
-                                    aria-label="View customer"
+                                    :aria-label="$t('customers.profile')"
                                     icon="mdi-eye-outline"
                                     size="small"
                                     variant="text"
@@ -240,7 +242,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                                 />
                                 <v-btn
                                     v-if="canManage"
-                                    aria-label="Edit customer"
+                                    :aria-label="$t('common.edit')"
                                     icon="mdi-pencil-outline"
                                     size="small"
                                     variant="text"
@@ -248,7 +250,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                                 />
                                 <v-btn
                                     v-if="canManage"
-                                    aria-label="Delete customer"
+                                    :aria-label="$t('common.delete')"
                                     color="error"
                                     icon="mdi-delete-outline"
                                     size="small"
@@ -259,7 +261,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                         </template>
                         <template #no-data>
                             <div class="pa-8 text-center text-medium-emphasis">
-                                No customers found.
+                                {{ $t('common.noData') }}
                             </div>
                         </template>
                     </v-data-table-server>
@@ -284,24 +286,24 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                                         </div>
                                     </div>
                                     <div class="d-flex justify-space-between align-center mb-2">
-                                        <span class="text-caption text-medium-emphasis">Customer code</span>
+                                        <span class="text-caption text-medium-emphasis">{{ $t('common.code') }}</span>
                                         <span class="text-caption">{{ customer.code }}</span>
                                     </div>
                                     <div class="d-flex justify-space-between align-center">
-                                        <span class="text-caption text-medium-emphasis">Due balance</span>
+                                        <span class="text-caption text-medium-emphasis">{{ $t('customers.dueBalance') }}</span>
                                         <strong>{{ currencySymbol }}{{ formatMoney(customer.opening_balance) }}</strong>
                                     </div>
                                 </v-card-text>
                                 <v-card-actions v-if="canManage" class="px-3 pb-3">
                                     <v-btn
-                                        aria-label="Edit customer"
+                                        :aria-label="$t('common.edit')"
                                         icon="mdi-pencil-outline"
                                         size="small"
                                         variant="text"
                                         @click.stop="openEdit(customer)"
                                     />
                                     <v-btn
-                                        aria-label="Delete customer"
+                                        :aria-label="$t('common.delete')"
                                         color="error"
                                         icon="mdi-delete-outline"
                                         size="small"
@@ -314,7 +316,7 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
                     </v-row>
 
                     <div v-if="!customerStore.loading && !customerStore.items.length" class="d-md-none pa-8 text-center text-medium-emphasis">
-                        No customers found.
+                        {{ $t('common.noData') }}
                     </div>
                 </v-card>
             </v-col>
@@ -322,19 +324,19 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer))
 
         <v-dialog v-model="deleteDialog" max-width="420">
             <v-card>
-                <v-card-title>Delete this customer?</v-card-title>
+                <v-card-title>{{ $t('customers.deleteTitle') }}</v-card-title>
                 <v-card-text>
-                    This permanently removes {{ deleteTarget?.name }} and their profile. This cannot be undone.
+                    {{ $t('customers.deleteBody', { name: deleteTarget?.name }) }}
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="deleteDialog = false">Cancel</v-btn>
+                    <v-btn variant="text" @click="deleteDialog = false">{{ $t('common.cancel') }}</v-btn>
                     <v-btn
                         color="error"
                         :loading="customerStore.saving"
                         @click="confirmDelete"
                     >
-                        Delete
+                        {{ $t('common.delete') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>

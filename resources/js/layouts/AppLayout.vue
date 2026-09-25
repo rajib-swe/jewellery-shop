@@ -3,87 +3,92 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useGoldRatesStore } from '../stores/gold-rates'
+import { useLocaleStore } from '../stores/locale'
 import { useSettingsStore } from '../stores/settings'
 
 const authStore = useAuthStore()
 const goldRateStore = useGoldRatesStore()
+const localeStore = useLocaleStore()
 const settingsStore = useSettingsStore()
 const router = useRouter()
 const drawer = ref(true)
 const logoutError = ref(false)
 
-const navigation = [
+const navigation = computed(() => [
     {
-        title: 'Dashboard',
+        title: localeStore.t('nav.dashboard'),
         icon: 'mdi-view-dashboard-outline',
         to: { name: 'dashboard' },
         permission: 'access api',
     },
     {
-        title: 'Gold Rates',
+        title: localeStore.t('nav.goldRates'),
         icon: 'mdi-chart-line-variant',
         to: { name: 'gold-rates' },
         permission: 'view gold rates',
     },
     {
-        title: 'Customers',
+        title: localeStore.t('nav.customers'),
         icon: 'mdi-account-group-outline',
         to: { name: 'customers' },
         permission: 'view customers',
     },
     {
-        title: 'Sales',
+        title: localeStore.t('nav.sales'),
         icon: 'mdi-receipt-text-outline',
         to: { name: 'sales' },
         permission: 'view sales',
     },
     {
-        title: 'New Sale',
+        title: localeStore.t('nav.newSale'),
         icon: 'mdi-cart-arrow-right',
         to: { name: 'sale-create' },
         permission: 'manage sales',
     },
     {
-        title: 'Inventory Items',
+        title: localeStore.t('nav.items'),
         icon: 'mdi-package-variant-closed',
         to: { name: 'items' },
         permission: 'view inventory',
     },
     {
-        title: 'Stock Summary',
+        title: localeStore.t('nav.stockSummary'),
         icon: 'mdi-scale-balance',
         to: { name: 'stock-summary' },
         permission: 'view inventory',
     },
     {
-        title: 'Categories',
+        title: localeStore.t('nav.categories'),
         icon: 'mdi-shape-outline',
         to: { name: 'categories' },
         permission: 'view inventory',
     },
     {
-        title: 'Item Labels',
+        title: localeStore.t('nav.itemLabels'),
         icon: 'mdi-printer-outline',
         to: { name: 'item-labels' },
         permission: 'view inventory',
     },
     {
-        title: 'Settings',
+        title: localeStore.t('nav.settings'),
         icon: 'mdi-cog-outline',
         to: { name: 'settings' },
         permission: 'view settings',
     },
-]
+])
 
-const visibleNavigation = computed(() => navigation.filter(
+const visibleNavigation = computed(() => navigation.value.filter(
     (item) => !item.permission || authStore.can(item.permission),
 ))
 
-const shopName = computed(() => settingsStore.settings.shop_name || 'Jewellery Shop')
+const shopName = computed(() => settingsStore.settings.shop_name || localeStore.t('common.appName'))
 const latestRate = computed(() => goldRateStore.latest.find((rate) => rate.karat === 22)
     ?? goldRateStore.latest[0]
     ?? null)
 const currencySymbol = computed(() => settingsStore.settings.currency_symbol || '৳')
+const buildStepLabel = computed(() => localeStore.t('nav.buildStep'))
+const noRateLabel = computed(() => localeStore.t('goldRates.title'))
+const latestRatePerGram = computed(() => `/${localeStore.t('units.gram')}`)
 
 const initials = computed(() => {
     const name = authStore.user?.name?.trim() ?? ''
@@ -136,7 +141,7 @@ onMounted(loadHeaderData)
                 </v-avatar>
                 <div>
                     <div class="text-subtitle-1 font-weight-bold">{{ shopName }}</div>
-                    <div class="text-caption text-medium-emphasis">Operations console</div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('nav.operations') }}</div>
                 </div>
             </div>
         </div>
@@ -154,12 +159,12 @@ onMounted(loadHeaderData)
         </v-list>
 
         <template #append>
-            <div class="pa-4 text-caption text-medium-emphasis">Step 5 · Sale entry</div>
+            <div class="pa-4 text-caption text-medium-emphasis">{{ buildStepLabel }}</div>
         </template>
     </v-navigation-drawer>
 
     <v-app-bar color="surface" flat border>
-        <v-app-bar-nav-icon aria-label="Toggle navigation" @click="drawer = !drawer" />
+        <v-app-bar-nav-icon :aria-label="$t('nav.operations')" @click="drawer = !drawer" />
         <v-app-bar-title>{{ shopName }}</v-app-bar-title>
 
         <v-spacer />
@@ -171,11 +176,31 @@ onMounted(loadHeaderData)
             prepend-icon="mdi-chart-line-variant"
             variant="tonal"
         >
-            {{ latestRate.karat }}K · {{ currencySymbol }}{{ formatRate(latestRate.rate_per_gram) }}/g
+            {{ latestRate.karat }}K · {{ currencySymbol }}{{ formatRate(latestRate.rate_per_gram) }}{{ latestRatePerGram }}
         </v-chip>
         <v-chip v-else class="mr-3 d-none d-sm-flex" color="warning" variant="tonal">
-            No gold rate
+            {{ noRateLabel }}
         </v-chip>
+
+        <v-btn-toggle
+            :aria-label="$t('common.language')"
+            class="mr-2"
+            color="primary"
+            density="compact"
+            mandatory
+            :model-value="localeStore.locale"
+            variant="outlined"
+        >
+            <v-btn
+                v-for="option in localeStore.supportedLocales"
+                :key="option.code"
+                :aria-label="option.title"
+                :title="option.title"
+                :value="option.code"
+            >
+                {{ option.title }}
+            </v-btn>
+        </v-btn-toggle>
 
         <v-menu v-if="authStore.user" location="bottom end">
             <template #activator="{ props }">
@@ -196,7 +221,7 @@ onMounted(loadHeaderData)
                 <v-divider />
                 <v-list-item
                     prepend-icon="mdi-logout"
-                    title="Sign out"
+                    :title="$t('auth.signOut')"
                     @click="handleLogout"
                 />
             </v-list>
@@ -208,6 +233,6 @@ onMounted(loadHeaderData)
     </v-main>
 
     <v-snackbar v-model="logoutError" color="error" timeout="5000">
-        Unable to sign out. Check your connection and try again.
+        {{ $t('auth.signOutFailed') }}
     </v-snackbar>
 </template>

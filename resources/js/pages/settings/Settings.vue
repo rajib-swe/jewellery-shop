@@ -1,11 +1,17 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { useLocaleStore } from '../../stores/locale'
 import { useSettingsStore } from '../../stores/settings'
 
 const authStore = useAuthStore()
+const localeStore = useLocaleStore()
 const settingsStore = useSettingsStore()
 const canManage = computed(() => authStore.can('manage settings'))
+const weightUnitItems = computed(() => [
+    { title: localeStore.t('settings.weightUnitGram'), value: 'gram' },
+    { title: localeStore.t('settings.weightUnitVori'), value: 'vori' },
+])
 const form = reactive({
     shop_name: '',
     shop_address: '',
@@ -34,7 +40,7 @@ async function load() {
     try {
         updateForm(await settingsStore.fetchSettings())
     } catch {
-        errorMessage.value = settingsStore.error ?? 'Unable to load settings.'
+        errorMessage.value = settingsStore.error ?? localeStore.t('errors.connection')
     }
 }
 
@@ -65,7 +71,7 @@ async function save() {
         removeLogo.value = false
         revokePreview()
     } catch {
-        errorMessage.value = settingsStore.error ?? 'Unable to save settings.'
+        errorMessage.value = settingsStore.error ?? localeStore.t('errors.connection')
     }
 }
 
@@ -94,10 +100,10 @@ onBeforeUnmount(revokePreview)
             <v-col cols="12" lg="9">
                 <v-card elevation="2">
                     <v-card-item>
-                        <v-card-subtitle>Shop configuration</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">Settings</v-card-title>
+                        <v-card-subtitle>{{ $t('settings.subtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('settings.title') }}</v-card-title>
                         <v-card-text class="text-medium-emphasis">
-                            These values are used throughout the shop, printed documents, and future modules.
+                            {{ $t('settings.subtitleNote') }}
                         </v-card-text>
                     </v-card-item>
 
@@ -119,7 +125,7 @@ onBeforeUnmount(revokePreview)
                                     <v-text-field
                                         v-model="form.shop_name"
                                         :disabled="!canManage"
-                                        label="Shop name"
+                                        :label="$t('settings.shopName')"
                                         prepend-inner-icon="mdi-store-outline"
                                         required
                                     />
@@ -128,7 +134,7 @@ onBeforeUnmount(revokePreview)
                                     <v-text-field
                                         v-model="form.shop_phone"
                                         :disabled="!canManage"
-                                        label="Phone"
+                                        :label="$t('common.phone')"
                                         prepend-inner-icon="mdi-phone-outline"
                                     />
                                 </v-col>
@@ -136,7 +142,7 @@ onBeforeUnmount(revokePreview)
                                     <v-textarea
                                         v-model="form.shop_address"
                                         :disabled="!canManage"
-                                        label="Address"
+                                        :label="$t('common.address')"
                                         prepend-inner-icon="mdi-map-marker-outline"
                                         rows="2"
                                         auto-grow
@@ -146,7 +152,7 @@ onBeforeUnmount(revokePreview)
                                     <v-text-field
                                         v-model="form.vat_percentage"
                                         :disabled="!canManage"
-                                        label="VAT percentage"
+                                        :label="$t('settings.vatPercentage')"
                                         min="0"
                                         max="100"
                                         step="0.01"
@@ -158,7 +164,7 @@ onBeforeUnmount(revokePreview)
                                     <v-text-field
                                         v-model="form.currency_symbol"
                                         :disabled="!canManage"
-                                        label="Currency symbol"
+                                        :label="$t('settings.currencySymbol')"
                                         maxlength="10"
                                     />
                                 </v-col>
@@ -166,22 +172,19 @@ onBeforeUnmount(revokePreview)
                                     <v-select
                                         v-model="form.weight_unit"
                                         :disabled="!canManage"
-                                        :items="[
-                                            { title: 'Gram', value: 'gram' },
-                                            { title: 'Vori', value: 'vori' },
-                                        ]"
-                                        label="Default weight unit"
+                                        :items="weightUnitItems"
+                                        :label="$t('settings.weightUnit')"
                                     />
                                 </v-col>
                                 <v-col cols="12" md="8">
                                     <v-text-field
                                         v-model="form.default_pawn_interest_rate"
                                         :disabled="!canManage"
-                                        label="Default pawn interest rate"
+                                        :label="$t('settings.defaultPawnInterest')"
                                         min="0"
                                         max="100"
                                         step="0.01"
-                                        suffix="% per month"
+                                        :suffix="$t('settings.perMonth')"
                                         type="number"
                                     />
                                 </v-col>
@@ -189,7 +192,7 @@ onBeforeUnmount(revokePreview)
                                     <v-textarea
                                         v-model="form.invoice_footer"
                                         :disabled="!canManage"
-                                        label="Invoice footer"
+                                        :label="$t('settings.invoiceFooter')"
                                         prepend-inner-icon="mdi-format-align-left"
                                         rows="2"
                                         auto-grow
@@ -199,7 +202,7 @@ onBeforeUnmount(revokePreview)
 
                             <v-divider class="my-6" />
 
-                            <div class="text-subtitle-1 font-weight-bold mb-3">Shop logo</div>
+                            <div class="text-subtitle-1 font-weight-bold mb-3">{{ $t('settings.shopLogo') }}</div>
                             <v-row align="center">
                                 <v-col cols="12" sm="4" md="3">
                                     <v-img
@@ -218,7 +221,7 @@ onBeforeUnmount(revokePreview)
                                         v-model="logoFile"
                                         :disabled="!canManage"
                                         accept="image/png,image/jpeg,image/webp"
-                                        label="Choose a logo"
+                                        :label="$t('settings.chooseLogo')"
                                         prepend-icon="mdi-upload-outline"
                                         show-size
                                         @update:model-value="selectLogo"
@@ -229,7 +232,7 @@ onBeforeUnmount(revokePreview)
                                         :disabled="!canManage"
                                         color="error"
                                         density="compact"
-                                        label="Remove current logo on save"
+                                        :label="$t('settings.removeLogo')"
                                     />
                                 </v-col>
                             </v-row>
@@ -242,7 +245,7 @@ onBeforeUnmount(revokePreview)
                                 variant="tonal"
                                 type="info"
                             >
-                                You have read-only access. Ask an administrator or manager to change settings.
+                                {{ $t('settings.readOnly') }}
                             </v-alert>
 
                             <v-btn
@@ -253,7 +256,7 @@ onBeforeUnmount(revokePreview)
                                 size="large"
                                 type="submit"
                             >
-                                Save settings
+                                {{ $t('common.save') }}
                             </v-btn>
                         </v-form>
                     </v-card-text>

@@ -1,12 +1,3 @@
-export const PAYMENT_METHOD_OPTIONS = [
-    { title: 'Cash', value: 'cash' },
-    { title: 'bKash', value: 'bkash' },
-    { title: 'Nagad', value: 'nagad' },
-    { title: 'Card', value: 'card' },
-    { title: 'Bank', value: 'bank' },
-]
+export const PAYMENT_METHODS = ['cash', 'bkash', 'nagad', 'card', 'bank']
 
-export const SALE_STATUS_OPTIONS = [
-    { title: 'Completed', value: 'completed' },
-    { title: 'Void', value: 'void' },
-]
+export const SALE_STATUSES = ['completed', 'void']

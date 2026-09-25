@@ -2,17 +2,17 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useInventoryStore } from '../../stores/inventory'
+import { useLocaleStore } from '../../stores/locale'
+import { useWeightFormatter } from '../../utils/format'
 
 const router = useRouter()
 const inventoryStore = useInventoryStore()
+const localeStore = useLocaleStore()
+const { formatWeight } = useWeightFormatter()
 const errorMessage = ref('')
 const loading = ref(false)
 
 const labels = computed(() => inventoryStore.items)
-
-function formatWeight(value) {
-    return `${Number(value || 0).toFixed(3)} g`
-}
 
 async function load() {
     loading.value = true
@@ -24,7 +24,7 @@ async function load() {
             per_page: 100,
         }, true)
     } catch {
-        errorMessage.value = inventoryStore.error ?? 'Unable to load labels.'
+        errorMessage.value = inventoryStore.error ?? localeStore.t('inventory.loadFailed')
     } finally {
         loading.value = false
     }
@@ -43,18 +43,18 @@ onMounted(load)
             <v-col cols="12">
                 <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6">
                     <div>
-                        <v-card-subtitle>Gold inventory</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">Item labels</v-card-title>
+                        <v-card-subtitle>{{ $t('inventory.itemsSubtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('nav.itemLabels') }}</v-card-title>
                         <v-card-text class="text-medium-emphasis pa-0 mt-1">
-                            Print compact tag and barcode labels for in-stock items.
+                            {{ $t('inventory.labelsIntro') }}
                         </v-card-text>
                     </div>
                     <div class="d-flex flex-wrap ga-2">
                         <v-btn prepend-icon="mdi-arrow-left" variant="text" @click="router.push({ name: 'items' })">
-                            Items
+                            {{ $t('inventory.itemsTitle') }}
                         </v-btn>
                         <v-btn color="primary" prepend-icon="mdi-printer-outline" @click="printPage">
-                            Print labels
+                            {{ $t('inventory.printLabels') }}
                         </v-btn>
                     </div>
                 </div>
@@ -79,22 +79,22 @@ onMounted(load)
                             <v-card-text>
                                 <div class="d-flex justify-space-between align-start ga-2">
                                     <div>
-                                        <div class="text-overline">Jewellery item</div>
+                                        <div class="text-overline">{{ $t('inventory.item') }}</div>
                                         <div class="text-h6 font-weight-bold">{{ item.name }}</div>
                                     </div>
                                     <v-chip color="primary" size="small" variant="tonal">{{ item.karat }}K</v-chip>
                                 </div>
                                 <v-divider class="my-3" />
                                 <div class="d-flex justify-space-between text-body-2">
-                                    <span class="text-medium-emphasis">Tag</span>
+                                    <span class="text-medium-emphasis">{{ $t('inventory.tagNo') }}</span>
                                     <strong>{{ item.tag_no }}</strong>
                                 </div>
                                 <div class="d-flex justify-space-between text-body-2 mt-1">
-                                    <span class="text-medium-emphasis">Weight</span>
+                                    <span class="text-medium-emphasis">{{ $t('inventory.netWeight') }}</span>
                                     <strong>{{ formatWeight(item.net_weight) }}</strong>
                                 </div>
                                 <div class="d-flex justify-space-between text-body-2 mt-1">
-                                    <span class="text-medium-emphasis">Category</span>
+                                    <span class="text-medium-emphasis">{{ $t('inventory.category') }}</span>
                                     <span>{{ item.category.name }}</span>
                                 </div>
                                 <div v-if="item.barcode" class="barcode mt-4 text-center">
@@ -102,7 +102,7 @@ onMounted(load)
                                     <div class="text-caption font-weight-medium">{{ item.barcode }}</div>
                                 </div>
                                 <div v-else class="text-caption text-medium-emphasis text-center mt-4">
-                                    No barcode assigned
+                                    {{ $t('inventory.barcode') }} —
                                 </div>
                             </v-card-text>
                         </v-card>
@@ -111,8 +111,8 @@ onMounted(load)
                 <v-empty-state
                     v-else-if="!loading"
                     icon="mdi-printer-outline"
-                    title="No in-stock labels"
-                    text="Add an in-stock item before printing labels."
+                    :title="$t('common.noData')"
+                    :text="$t('inventory.labelsIntro')"
                 />
             </v-col>
         </v-row>

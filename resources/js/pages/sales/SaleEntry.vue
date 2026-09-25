@@ -2,21 +2,25 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import CustomerPicker from '../../components/CustomerPicker.vue'
-import { PAYMENT_METHOD_OPTIONS } from '../../constants/sales'
-import { KARAT_OPTIONS } from '../../constants/inventory'
+import { useOptionLabels } from '../../constants/options'
 import { useAuthStore } from '../../stores/auth'
 import { useGoldRatesStore } from '../../stores/gold-rates'
 import { useInventoryStore } from '../../stores/inventory'
+import { useLocaleStore } from '../../stores/locale'
 import { useSalesStore } from '../../stores/sales'
 import { useSettingsStore } from '../../stores/settings'
-import { gramsToTraditional } from '../../utils/weight'
+import { useCurrency, useWeightFormatter } from '../../utils/format'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const goldRateStore = useGoldRatesStore()
 const inventoryStore = useInventoryStore()
+const localeStore = useLocaleStore()
 const salesStore = useSalesStore()
 const settingsStore = useSettingsStore()
+const { karatOptions: karatItems, paymentMethodOptions: paymentItems } = useOptionLabels()
+const { formatWeight: formatItemWeight } = useWeightFormatter()
+const currencySymbol = useCurrency()
 const canOverrideRate = computed(() => authStore.can('manage gold rates'))
 const customer = ref(null)
 const date = ref(new Date().toISOString().slice(0, 10))
@@ -33,8 +37,6 @@ const errorMessage = ref('')
 const fieldErrors = reactive({})
 const loadingInitial = ref(false)
 
-const currencySymbol = computed(() => settingsStore.settings.currency_symbol || '৳')
-const weightUnit = computed(() => settingsStore.settings.weight_unit || 'gram')
 const vatPercentage = computed(() => Number(settingsStore.settings.vat_percentage || 0))
 const categoryItems = computed(() => inventoryStore.categories.map((category) => ({
     title: category.name,
@@ -81,29 +83,19 @@ const total = computed(() => round2(subtotal.value - discountAmount.value + vat.
 const paid = computed(() => round2(payments.value.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)))
 const due = computed(() => round2(total.value - paid.value))
 
-const itemItems = computed(() => itemResults.value.map((item) => ({    ...item,
+const itemItems = computed(() => itemResults.value.map((item) => ({
+    ...item,
     title: `${item.name} · ${item.tag_no}`,
-    subtitle: `${item.karat}K · ${Number(item.net_weight).toFixed(3)} g`,
+    subtitle: `${item.karat}K · ${formatItemWeight(item.net_weight)}`,
 })))
 
-const karatItems = KARAT_OPTIONS
+function money(value) {
+    const amount = Number(value || 0)
 
-function money(value) {    return `${currencySymbol.value}${Number(value || 0).toLocaleString('en-US', {
+    return `${currencySymbol.value}${amount.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })}`
-}
-
-function formatWeight(grams) {
-    const value = Number(grams || 0)
-
-    if (weightUnit.value === 'vori') {
-        const traditional = gramsToTraditional(value)
-
-        return `${traditional.vori.toFixed(4)} vori`
-    }
-
-    return `${value.toFixed(3)} g`
 }
 
 function clearFieldErrors() {
@@ -129,7 +121,7 @@ async function load() {
             inventoryStore.fetchCategories(),
         ])
     } catch {
-        errorMessage.value = 'Unable to load the sale prerequisites.'
+        errorMessage.value = localeStore.t('sales.loadFailed')
     } finally {
         loadingInitial.value = false
     }
@@ -164,14 +156,14 @@ function addItem(item) {
     errorMessage.value = ''
 
     if (lines.value.some((line) => line.item_id === item.id)) {
-        errorMessage.value = `${item.name} is already on this invoice.`
+        errorMessage.value = localeStore.t('sales.alreadyAdded', { name: item.name })
         return
     }
 
     const shopRate = rateFor(item.karat)
 
     if (shopRate === null) {
-        errorMessage.value = `No gold rate is configured for ${item.karat}K.`
+        errorMessage.value = localeStore.t('sales.noRate', { karat: `${item.karat}K` })
         return
     }
 
@@ -298,7 +290,7 @@ async function submit() {
         const sale = await salesStore.saveSale(buildPayload())
         router.push({ name: 'sale-profile', params: { id: sale.id } })
     } catch (error) {
-        errorMessage.value = error.response?.data?.message ?? salesStore.error ?? 'Unable to record the sale.'
+        errorMessage.value = error.response?.data?.message ?? salesStore.error ?? localeStore.t('sales.saveFailed')
         setValidationErrors(error.response?.data?.errors ?? {})
     }
 }
@@ -332,21 +324,21 @@ onMounted(load)
             <v-col cols="12">
                 <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6">
                     <div>
-                        <v-card-subtitle>Sales</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">New sale</v-card-title>
+                        <v-card-subtitle>{{ $t('sales.listSubtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('sales.newTitle') }}</v-card-title>
                         <v-card-text class="text-medium-emphasis pa-0 mt-1">
-                            Every total is recalculated on the server before the invoice is stored.
+                            {{ $t('sales.newIntro') }}
                         </v-card-text>
                     </div>
                     <div class="d-flex flex-wrap ga-2">
-                        <v-btn variant="outlined" @click="reset">Clear</v-btn>
+                        <v-btn variant="outlined" @click="reset">{{ $t('common.clear') }}</v-btn>
                         <v-btn
                             color="primary"
                             prepend-icon="mdi-content-save-outline"
                             :loading="salesStore.saving"
                             @click="submit"
                         >
-                            Save sale
+                            {{ $t('sales.saveSale') }}
                         </v-btn>
                     </div>
                 </div>
@@ -372,13 +364,16 @@ onMounted(load)
                     <v-card-text>
                         <v-row dense>
                             <v-col cols="12" md="6">
-                                <CustomerPicker v-model="customer" label="Customer (optional for walk-in sales)" />
+                                <CustomerPicker
+                                    v-model="customer"
+                                    :label="$t('sales.walkInCustomer')"
+                                />
                             </v-col>
                             <v-col cols="12" md="3">
                                 <v-text-field
                                     v-model="date"
                                     density="comfortable"
-                                    label="Sale date"
+                                    :label="$t('sales.saleDate')"
                                     type="date"
                                     variant="outlined"
                                 />
@@ -387,7 +382,7 @@ onMounted(load)
                                 <v-text-field
                                     v-model="discount"
                                     :error-messages="fieldErrors.discount"
-                                    label="Discount"
+                                    :label="$t('common.discount')"
                                     min="0"
                                     step="0.01"
                                     :suffix="currencySymbol"
@@ -400,7 +395,7 @@ onMounted(load)
                 </v-card>
 
                 <v-card class="mb-6" elevation="2">
-                    <v-card-title class="text-subtitle-1 font-weight-medium">Items</v-card-title>
+                    <v-card-title class="text-subtitle-1 font-weight-medium">{{ $t('sales.items') }}</v-card-title>
                     <v-card-text>
                         <v-alert
                             v-if="fieldErrors.items"
@@ -421,8 +416,8 @@ onMounted(load)
                             item-title="title"
                             item-subtitle="subtitle"
                             item-value="id"
-                            label="Scan or search a tag, barcode, or name"
-                            no-data-text="Type at least two characters to search in-stock items"
+                            :label="$t('sales.addItemHint')"
+                            :no-data-text="$t('sales.noItemData')"
                             return-object
                             variant="outlined"
                             @update:search="searchItems"
@@ -439,11 +434,11 @@ onMounted(load)
                     <v-table density="comfortable">
                         <thead>
                             <tr>
-                                <th>Item</th>
-                                <th class="text-end">Weight</th>
-                                <th class="text-end">Rate/g</th>
-                                <th class="text-end">Making</th>
-                                <th class="text-end">Line total</th>
+                                <th>{{ $t('sales.items') }}</th>
+                                <th class="text-end">{{ $t('inventory.netWeight') }}</th>
+                                <th class="text-end">{{ $t('sales.ratePerGram') }}</th>
+                                <th class="text-end">{{ $t('sales.making') }}</th>
+                                <th class="text-end">{{ $t('sales.lineTotal') }}</th>
                                 <th />
                             </tr>
                         </thead>
@@ -456,12 +451,12 @@ onMounted(load)
                                     </div>
                                 </td>
                                 <td class="text-end">
-                                    {{ formatWeight(line.net_weight) }}
+                                    {{ formatItemWeight(line.net_weight) }}
                                 </td>
                                 <td class="text-end">
                                     <v-text-field
                                         v-model="line.rate"
-                                        :hint="`Shop rate ${money(line.shop_rate)}`"
+                                        :hint="$t('sales.shopRate', { rate: money(line.shop_rate) })"
                                         persistent-hint
                                         :placeholder="Number(line.shop_rate).toFixed(2)"
                                         :readonly="!canOverrideRate"
@@ -479,7 +474,7 @@ onMounted(load)
                                 </td>
                                 <td class="text-end">
                                     <v-btn
-                                        aria-label="Remove item"
+                                        :aria-label="$t('sales.removeItem')"
                                         icon="mdi-delete-outline"
                                         size="small"
                                         variant="text"
@@ -489,7 +484,7 @@ onMounted(load)
                             </tr>
                             <tr v-if="!lines.length">
                                 <td class="text-center text-medium-emphasis" colspan="6">
-                                    No items added yet.
+                                    {{ $t('sales.noLines') }}
                                 </td>
                             </tr>
                         </tbody>
@@ -498,14 +493,14 @@ onMounted(load)
 
                 <v-card class="mb-6" elevation="2">
                     <v-card-title class="d-flex align-center justify-space-between text-subtitle-1 font-weight-medium">
-                        Old gold exchange
+                        {{ $t('sales.exchangeSection') }}
                         <v-btn
                             prepend-icon="mdi-plus"
                             size="small"
                             variant="tonal"
                             @click="addExchangeRow"
                         >
-                            Add exchange
+                            {{ $t('sales.addExchange') }}
                         </v-btn>
                     </v-card-title>
                     <v-card-text>
@@ -525,7 +520,7 @@ onMounted(load)
                                 <v-text-field
                                     v-model="exchange.description"
                                     :error-messages="fieldErrors[`exchanges.${index}.description`]"
-                                    label="Description"
+                                    :label="$t('sales.description')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -534,7 +529,7 @@ onMounted(load)
                                 <v-select
                                     v-model="exchange.karat"
                                     :items="karatItems"
-                                    label="Karat"
+                                    :label="$t('inventory.karat')"
                                     variant="outlined"
                                     density="compact"
                                     @update:model-value="onExchangeKaratChange(exchange)"
@@ -544,10 +539,10 @@ onMounted(load)
                                 <v-text-field
                                     v-model="exchange.weight"
                                     :error-messages="fieldErrors[`exchanges.${index}.weight`]"
-                                    label="Weight"
+                                    :label="$t('inventory.netWeight')"
                                     min="0.001"
                                     step="0.001"
-                                    suffix="g"
+                                    :suffix="$t('units.gram')"
                                     type="number"
                                     variant="outlined"
                                     density="compact"
@@ -556,7 +551,7 @@ onMounted(load)
                             <v-col cols="6" md="2">
                                 <v-text-field
                                     v-model="exchange.rate"
-                                    :hint="`Shop rate ${money(exchange.shop_rate)}`"
+                                    :hint="$t('sales.shopRate', { rate: money(exchange.shop_rate) })"
                                     persistent-hint
                                     :placeholder="Number(exchange.shop_rate || 0).toFixed(2)"
                                     :readonly="!canOverrideRate"
@@ -571,14 +566,14 @@ onMounted(load)
                                     v-model="exchange.category_id"
                                     clearable
                                     :items="categoryItems"
-                                    label="Store as scrap"
+                                    :label="$t('sales.storeAsScrap')"
                                     variant="outlined"
                                     density="compact"
                                 />
                             </v-col>
                             <v-col cols="12" md="1" class="d-flex align-center justify-end">
                                 <v-btn
-                                    aria-label="Remove exchange"
+                                    :aria-label="$t('sales.removeExchange')"
                                     icon="mdi-delete-outline"
                                     size="small"
                                     variant="text"
@@ -588,21 +583,21 @@ onMounted(load)
                         </v-row>
 
                         <div v-if="!exchanges.length" class="text-medium-emphasis">
-                            No old gold submitted for exchange.
+                            {{ $t('sales.noExchanges') }}
                         </div>
                     </v-card-text>
                 </v-card>
 
                 <v-card elevation="2">
                     <v-card-title class="d-flex align-center justify-space-between text-subtitle-1 font-weight-medium">
-                        Payments
+                        {{ $t('sales.payments') }}
                         <v-btn
                             prepend-icon="mdi-plus"
                             size="small"
                             variant="tonal"
                             @click="addPaymentRow"
                         >
-                            Add payment
+                            {{ $t('sales.addPayment') }}
                         </v-btn>
                     </v-card-title>
                     <v-card-text>
@@ -621,8 +616,8 @@ onMounted(load)
                             <v-col cols="12" md="3">
                                 <v-select
                                     v-model="payment.method"
-                                    :items="PAYMENT_METHOD_OPTIONS"
-                                    label="Method"
+                                    :items="paymentItems"
+                                    :label="$t('common.method')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -630,7 +625,7 @@ onMounted(load)
                             <v-col cols="6" md="3">
                                 <v-text-field
                                     v-model="payment.amount"
-                                    label="Amount"
+                                    :label="$t('common.amount')"
                                     min="0.01"
                                     step="0.01"
                                     :suffix="currencySymbol"
@@ -642,14 +637,14 @@ onMounted(load)
                             <v-col cols="6" md="4">
                                 <v-text-field
                                     v-model="payment.reference"
-                                    label="Reference"
+                                    :label="$t('common.reference')"
                                     variant="outlined"
                                     density="compact"
                                 />
                             </v-col>
                             <v-col cols="12" md="2" class="d-flex align-center justify-end">
                                 <v-btn
-                                    aria-label="Remove payment"
+                                    :aria-label="$t('sales.removePayment')"
                                     icon="mdi-delete-outline"
                                     size="small"
                                     variant="text"
@@ -663,23 +658,23 @@ onMounted(load)
 
             <v-col cols="12" lg="4">
                 <v-card elevation="2" position="sticky" style="top: 88px;">
-                    <v-card-title class="text-subtitle-1 font-weight-medium">Invoice preview</v-card-title>
+                    <v-card-title class="text-subtitle-1 font-weight-medium">{{ $t('sales.preview') }}</v-card-title>
                     <v-card-text>
                         <v-list density="compact" class="bg-transparent">
                             <v-list-item>
-                                <v-list-item-title>Subtotal</v-list-item-title>
+                                <v-list-item-title>{{ $t('common.subtotal') }}</v-list-item-title>
                                 <template #append>{{ money(subtotal) }}</template>
                             </v-list-item>
                             <v-list-item>
-                                <v-list-item-title>Discount</v-list-item-title>
+                                <v-list-item-title>{{ $t('common.discount') }}</v-list-item-title>
                                 <template #append>- {{ money(discountAmount) }}</template>
                             </v-list-item>
                             <v-list-item>
-                                <v-list-item-title>VAT ({{ vatPercentage }}%)</v-list-item-title>
+                                <v-list-item-title>{{ $t('common.vat') }} ({{ vatPercentage }}%)</v-list-item-title>
                                 <template #append>{{ money(vat) }}</template>
                             </v-list-item>
                             <v-list-item>
-                                <v-list-item-title>Old gold exchange</v-list-item-title>
+                                <v-list-item-title>{{ $t('sales.oldGoldExchange') }}</v-list-item-title>
                                 <template #append>- {{ money(exchangeTotal) }}</template>
                             </v-list-item>
                         </v-list>
@@ -687,15 +682,15 @@ onMounted(load)
                         <v-divider class="my-3" />
 
                         <div class="d-flex justify-space-between text-subtitle-1 font-weight-bold">
-                            <span>Total</span>
+                            <span>{{ $t('common.total') }}</span>
                             <span>{{ money(total) }}</span>
                         </div>
                         <div class="d-flex justify-space-between text-body-2 mt-2">
-                            <span>Paid</span>
+                            <span>{{ $t('common.paid') }}</span>
                             <span>{{ money(paid) }}</span>
                         </div>
                         <div class="d-flex justify-space-between text-body-2 mt-1">
-                            <span>Due</span>
+                            <span>{{ $t('common.due') }}</span>
                             <span :class="{ 'text-error font-weight-medium': due > 0 }">{{ money(due) }}</span>
                         </div>
                     </v-card-text>

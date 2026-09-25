@@ -6,6 +6,7 @@ import 'vuetify/styles'
 import App from './App.vue'
 import CustomerPicker from './components/CustomerPicker.vue'
 import router from './router'
+import { useLocaleStore } from './stores/locale'
 
 const vuetify = createVuetify({
     icons: {
@@ -33,9 +34,15 @@ const vuetify = createVuetify({
 })
 
 const app = createApp(App)
+const pinia = createPinia()
 
-app.use(createPinia())
+app.use(pinia)
 app.component('CustomerPicker', CustomerPicker)
 app.use(vuetify)
 app.use(router)
+
+const localeStore = useLocaleStore(pinia)
+
+app.config.globalProperties.$t = localeStore.t
+
 app.mount('#app')

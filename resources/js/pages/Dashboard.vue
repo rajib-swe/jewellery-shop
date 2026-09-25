@@ -1,24 +1,26 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useLocaleStore } from '../stores/locale'
 import GoldPriceTable from '../components/GoldPriceTable.vue'
 
 const authStore = useAuthStore()
+const localeStore = useLocaleStore()
 
 const roleLabel = computed(() => {
     if (!authStore.primaryRole) {
-        return 'No role'
+        return localeStore.t('common.noRole')
     }
 
-    return authStore.primaryRole.charAt(0).toUpperCase() + authStore.primaryRole.slice(1)
+    return localeStore.t(`common.roles.${authStore.primaryRole}`)
 })
 
-const capabilities = [
-    'Sanctum session authentication',
-    'Role and permission middleware',
-    'Server-backed user activity logging',
-    'Precision-safe weight conversions',
-]
+const capabilities = computed(() => [
+    localeStore.t('dashboard.capabilities.auth'),
+    localeStore.t('dashboard.capabilities.permissions'),
+    localeStore.t('dashboard.capabilities.activityLog'),
+    localeStore.t('dashboard.capabilities.weights'),
+])
 </script>
 
 <template>
@@ -27,15 +29,15 @@ const capabilities = [
             <v-col cols="12" lg="8">
                 <v-card class="h-100" elevation="2">
                     <v-card-item>
-                        <v-card-subtitle>Workspace overview</v-card-subtitle>
+                        <v-card-subtitle>{{ $t('dashboard.overview') }}</v-card-subtitle>
                         <v-card-title class="text-h4 font-weight-bold">
-                            Welcome, {{ authStore.user?.name }}
+                            {{ $t('dashboard.welcome', { name: authStore.user?.name }) }}
                         </v-card-title>
                     </v-card-item>
 
                     <v-card-text>
                         <p class="text-body-1 text-medium-emphasis mb-6">
-                            The application shell is ready. Modules will be added one build-plan step at a time.
+                            {{ $t('dashboard.intro') }}
                         </p>
 
                         <v-list lines="two">
@@ -72,8 +74,8 @@ const capabilities = [
             <v-col cols="12" class="mt-6">
                 <v-card elevation="2">
                     <v-card-item>
-                        <v-card-title class="text-h6">Live gold price</v-card-title>
-                        <v-card-subtitle>Current market prices for common karats.</v-card-subtitle>
+                        <v-card-title class="text-h6">{{ $t('dashboard.liveGoldPrice') }}</v-card-title>
+                        <v-card-subtitle>{{ $t('dashboard.liveGoldPriceBody') }}</v-card-subtitle>
                     </v-card-item>
                     <v-card-text>
                         <GoldPriceTable />

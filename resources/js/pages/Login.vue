@@ -2,8 +2,10 @@
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useLocaleStore } from '../stores/locale'
 
 const authStore = useAuthStore()
+const localeStore = useLocaleStore()
 const route = useRoute()
 const router = useRouter()
 const errorMessage = ref('')
@@ -15,12 +17,12 @@ const form = reactive({
 })
 
 const emailRules = [
-    (value) => Boolean(value) || 'Email address is required.',
-    (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || 'Enter a valid email address.',
+    (value) => Boolean(value) || localeStore.t('auth.emailRequired'),
+    (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || localeStore.t('auth.emailInvalid'),
 ]
 
 const passwordRules = [
-    (value) => Boolean(value) || 'Password is required.',
+    (value) => Boolean(value) || localeStore.t('auth.passwordRequired'),
 ]
 
 async function submit() {
@@ -40,8 +42,8 @@ async function submit() {
     } catch (error) {
         errorMessage.value = error.response?.data?.errors?.email?.[0]
             ?? error.response?.data?.message
-            ?? error.message
-            ?? 'Unable to sign in.'
+                            ?? error.message
+                            ?? localeStore.t('auth.failed')
     }
 }
 </script>
@@ -56,9 +58,9 @@ async function submit() {
                             <v-avatar color="primary" size="52" class="mb-5">
                                 <v-icon icon="mdi-diamond-stone" size="30" />
                             </v-avatar>
-                            <v-card-title class="text-h4 font-weight-bold">Jewellery Shop</v-card-title>
+                            <v-card-title class="text-h4 font-weight-bold">{{ $t('common.appName') }}</v-card-title>
                             <v-card-subtitle class="text-wrap mt-2">
-                                Sign in to manage sales, inventory, and pawn accounts.
+                                {{ $t('auth.subtitle') }}
                             </v-card-subtitle>
                         </v-card-item>
 
@@ -78,7 +80,7 @@ async function submit() {
                                 <v-text-field
                                     v-model="form.email"
                                     autocomplete="email"
-                                    label="Email address"
+                                    :label="$t('auth.email')"
                                     prepend-inner-icon="mdi-email-outline"
                                     :rules="emailRules"
                                     autofocus
@@ -87,7 +89,7 @@ async function submit() {
                                 <v-text-field
                                     v-model="form.password"
                                     autocomplete="current-password"
-                                    label="Password"
+                                    :label="$t('auth.password')"
                                     prepend-inner-icon="mdi-lock-outline"
                                     :rules="passwordRules"
                                     type="password"
@@ -98,7 +100,7 @@ async function submit() {
                                     color="primary"
                                     density="compact"
                                     hide-details
-                                    label="Keep me signed in"
+                                    :label="$t('auth.remember')"
                                 />
 
                                 <v-btn
@@ -109,7 +111,7 @@ async function submit() {
                                     type="submit"
                                     block
                                 >
-                                    Sign in
+                                    {{ $t('auth.signIn') }}
                                 </v-btn>
                             </v-form>
                         </v-card-text>

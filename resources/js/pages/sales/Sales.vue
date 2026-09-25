@@ -2,14 +2,17 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { useLocaleStore } from '../../stores/locale'
 import { useSalesStore } from '../../stores/sales'
-import { useSettingsStore } from '../../stores/settings'
-import { SALE_STATUS_OPTIONS } from '../../constants/sales'
+import { useOptionLabels } from '../../constants/options'
+import { useCurrency } from '../../utils/format'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const localeStore = useLocaleStore()
 const salesStore = useSalesStore()
-const settingsStore = useSettingsStore()
+const { saleStatusOptions: statusItems } = useOptionLabels()
+const currencySymbol = useCurrency()
 const canManage = computed(() => authStore.can('manage sales'))
 const page = ref(1)
 const perPage = ref(15)
@@ -20,40 +23,35 @@ const dateTo = ref(null)
 const errorMessage = ref('')
 let filterTimer = null
 
-const headers = [
-    { title: 'Invoice', key: 'invoice_no' },
-    { title: 'Date', key: 'date' },
-    { title: 'Customer', key: 'customer' },
-    { title: 'Total', key: 'total', align: 'end' },
-    { title: 'Paid', key: 'paid', align: 'end' },
-    { title: 'Due', key: 'due', align: 'end' },
-    { title: 'Status', key: 'status' },
-]
-
-const currencySymbol = computed(() => settingsStore.settings.currency_symbol || '৳')
+const headers = computed(() => [
+    { title: localeStore.t('sales.invoice'), key: 'invoice_no' },
+    { title: localeStore.t('common.date'), key: 'date' },
+    { title: localeStore.t('customers.pickerLabel'), key: 'customer' },
+    { title: localeStore.t('common.total'), key: 'total', align: 'end' },
+    { title: localeStore.t('common.paid'), key: 'paid', align: 'end' },
+    { title: localeStore.t('common.due'), key: 'due', align: 'end' },
+    { title: localeStore.t('common.status'), key: 'status' },
+])
 
 function money(value) {
-    return `${currencySymbol.value}${Number(value || 0).toLocaleString('en-US', {
+    const amount = Number(value || 0)
+
+    return `${currencySymbol.value}${amount.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })}`
 }
 
-function statusColor(value) {
-    return { completed: 'success', void: 'error' }[value] ?? 'default'
-}
+const statusColor = (value) => ({ completed: 'success', void: 'error' }[value] ?? 'default')
 
 async function load() {
     errorMessage.value = ''
     salesStore.clearError()
 
     try {
-        await Promise.all([
-            settingsStore.fetchSettings(),
-            fetchSales(),
-        ])
+        await fetchSales()
     } catch {
-        errorMessage.value = salesStore.error ?? 'Unable to load sales.'
+        errorMessage.value = salesStore.error ?? localeStore.t('sales.loadFailed')
     }
 }
 
@@ -68,7 +66,7 @@ async function fetchSales(force = false) {
             date_to: dateTo.value || undefined,
         }, force)
     } catch {
-        errorMessage.value = salesStore.error ?? 'Unable to load sales.'
+        errorMessage.value = salesStore.error ?? localeStore.t('sales.loadFailed')
     }
 }
 
@@ -108,10 +106,10 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
             <v-col cols="12">
                 <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-6">
                     <div>
-                        <v-card-subtitle>Sales</v-card-subtitle>
-                        <v-card-title class="text-h4 font-weight-bold">Invoices</v-card-title>
+                        <v-card-subtitle>{{ $t('sales.listSubtitle') }}</v-card-subtitle>
+                        <v-card-title class="text-h4 font-weight-bold">{{ $t('sales.listTitle') }}</v-card-title>
                         <v-card-text class="text-medium-emphasis pa-0 mt-1">
-                            Every recorded sale, its payment state, and the customer due.
+                            {{ $t('sales.listIntro') }}
                         </v-card-text>
                     </div>
                     <v-btn
@@ -120,7 +118,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                         prepend-icon="mdi-plus"
                         @click="openCreate"
                     >
-                        New sale
+                        {{ $t('sales.saveSale') }}
                     </v-btn>
                 </div>
 
@@ -148,7 +146,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                     clearable
                                     density="comfortable"
                                     hide-details
-                                    label="Search invoice, customer, or phone"
+                                    :label="$t('sales.searchPlaceholder')"
                                     prepend-inner-icon="mdi-magnify"
                                     variant="outlined"
                                 />
@@ -159,8 +157,8 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                     clearable
                                     density="comfortable"
                                     hide-details
-                                    :items="SALE_STATUS_OPTIONS"
-                                    label="Status"
+                                    :items="statusItems"
+                                    :label="$t('common.status')"
                                     variant="outlined"
                                 />
                             </v-col>
@@ -169,7 +167,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                     v-model="dateFrom"
                                     density="comfortable"
                                     hide-details
-                                    label="From"
+                                    :label="$t('common.from')"
                                     type="date"
                                     variant="outlined"
                                 />
@@ -179,7 +177,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                     v-model="dateTo"
                                     density="comfortable"
                                     hide-details
-                                    label="To"
+                                    :label="$t('common.to')"
                                     type="date"
                                     variant="outlined"
                                 />
@@ -213,7 +211,7 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                                 <div>{{ item.customer.name }}</div>
                                 <div class="text-caption text-medium-emphasis">{{ item.customer.phone }}</div>
                             </div>
-                            <span v-else class="text-medium-emphasis">Walk-in</span>
+                            <span v-else class="text-medium-emphasis">{{ $t('common.walkIn') }}</span>
                         </template>
                         <template #item.total="{ item }">
                             {{ money(item.total) }}
@@ -228,11 +226,11 @@ onBeforeUnmount(() => window.clearTimeout(filterTimer))
                         </template>
                         <template #item.status="{ item }">
                             <v-chip :color="statusColor(item.status)" size="small" variant="tonal">
-                                {{ item.status }}
+                                {{ $t(`options.${item.status}`) }}
                             </v-chip>
                         </template>
                         <template #no-data>
-                            <div class="pa-8 text-center text-medium-emphasis">No sales found.</div>
+                            <div class="pa-8 text-center text-medium-emphasis">{{ $t('common.noData') }}</div>
                         </template>
                     </v-data-table-server>
                 </v-card>
