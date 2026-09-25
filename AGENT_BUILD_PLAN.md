@@ -317,3 +317,7 @@ Commit: `feat: admin, audit log, backup and hardening`
 - Vue build passes (`npm run build`) with no console errors on the new pages.
 - Permissions applied to every new route and menu item.
 - Checklist updated and commit made.
+
+
+
+Test from home pc
