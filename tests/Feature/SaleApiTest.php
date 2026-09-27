@@ -343,6 +343,179 @@ class SaleApiTest extends TestCase
         );
     }
 
+    public function test_a_hand_written_line_is_priced_and_stored_without_a_catalogue_item(): void
+    {
+        $this->seedApplication();
+        $manager = $this->userWithRole('manager');
+        $customer = Customer::factory()->create();
+
+        $this->setGoldRate(22, '9000.00');
+
+        $this->actingAs($manager)->postJson('/api/v1/sales', [
+            'customer_id' => $customer->id,
+            'items' => [[
+                'item_id' => null,
+                'name' => 'নকল সোনা (হাতে লেখা)',
+                'karat' => 22,
+                'weight' => '4.000',
+                'making_type' => 'fixed',
+                'making_value' => '300.00',
+                'stone_price' => '0.00',
+            ]],
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.subtotal', '36300.00')
+            ->assertJsonPath('data.total', '36300.00')
+            ->assertJsonPath('data.items.0.item_id', null)
+            ->assertJsonPath('data.items.0.name', 'নকল সোনা (হাতে লেখা)')
+            ->assertJsonPath('data.items.0.karat', 22)
+            ->assertJsonPath('data.items.0.weight', '4.000')
+            ->assertJsonPath('data.items.0.rate', '9000.00')
+            ->assertJsonPath('data.items.0.gold_value', '36000.00')
+            ->assertJsonPath('data.items.0.making', '300.00')
+            ->assertJsonPath('data.items.0.line_total', '36300.00');
+
+        $line = Sale::query()->with('items')->sole()->items->sole();
+
+        $this->assertNull($line->item_id);
+        $this->assertSame('', $line->tag_no);
+    }
+
+    public function test_a_hand_written_line_takes_the_making_type_into_account(): void
+    {
+        $this->seedApplication();
+        $manager = $this->userWithRole('manager');
+
+        $this->setGoldRate(22, '10000.00');
+
+        $this->actingAs($manager)->postJson('/api/v1/sales', [
+            'items' => [[
+                'name' => 'Chain',
+                'karat' => 22,
+                'weight' => '10.000',
+                'making_type' => 'percent',
+                'making_value' => '5.00',
+            ]],
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.items.0.making', '5000.00')
+            ->assertJsonPath('data.total', '105000.00');
+    }
+
+    public function test_a_hand_written_line_honours_an_authorised_rate_override(): void
+    {
+        $this->seedApplication();
+        $manager = $this->userWithRole('manager');
+        $cashier = $this->cashier();
+
+        $this->setGoldRate(22, '9000.00');
+
+        $this->actingAs($manager)->postJson('/api/v1/sales', [
+            'items' => [[
+                'name' => 'Chain',
+                'karat' => 22,
+                'weight' => '1.000',
+                'rate' => '9500.00',
+            ]],
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.items.0.rate', '9500.00');
+
+        $this->actingAs($cashier)->postJson('/api/v1/sales', [
+            'items' => [[
+                'name' => 'Chain',
+                'karat' => 22,
+                'weight' => '1.000',
+                'rate' => '9500.00',
+            ]],
+        ])->assertForbidden();
+    }
+
+    public function test_a_hand_written_line_must_carry_a_name_karat_and_weight(): void
+    {
+        $this->seedApplication();
+        $manager = $this->userWithRole('manager');
+
+        $this->setGoldRate(22, '9000.00');
+
+        $this->actingAs($manager)
+            ->postJson('/api/v1/sales', ['items' => [['item_id' => null]]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['items.0.name', 'items.0.karat', 'items.0.weight']);
+    }
+
+    public function test_a_hand_written_line_needs_a_gold_rate_for_its_karat(): void
+    {
+        $this->seedApplication();
+        $manager = $this->userWithRole('manager');
+
+        $this->actingAs($manager)
+            ->postJson('/api/v1/sales', [
+                'items' => [[
+                    'name' => 'Chain',
+                    'karat' => 18,
+                    'weight' => '1.000',
+                ]],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items');
+    }
+
+    public function test_catalogue_and_hand_written_lines_can_share_one_sale(): void
+    {
+        $this->seedApplication();
+        $manager = $this->userWithRole('manager');
+        $item = $this->tenGramTwentyTwoKItem();
+
+        $this->setGoldRate(22, '9000.00');
+
+        $this->actingAs($manager)->postJson('/api/v1/sales', [
+            'items' => [
+                ['item_id' => $item->id],
+                [
+                    'item_id' => null,
+                    'name' => 'Handwritten ring',
+                    'karat' => 22,
+                    'weight' => '1.000',
+                    'making_type' => 'fixed',
+                    'making_value' => '0.00',
+                ],
+            ],
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.subtotal', '99000.00')
+            ->assertJsonCount(2, 'data.items');
+
+        $this->assertSame(ItemStatus::Sold, $item->refresh()->status);
+        $this->assertSame(
+            1,
+            StockMovement::query()->where('item_id', $item->id)->where('type', StockMovementType::Out)->count(),
+        );
+        $this->assertSame(1, Item::query()->where('status', ItemStatus::Sold->value)->count());
+    }
+
+    public function test_voiding_a_sale_with_a_hand_written_line_still_works(): void
+    {
+        $this->seedApplication();
+        $manager = $this->userWithRole('manager');
+        $item = $this->tenGramTwentyTwoKItem();
+
+        $this->setGoldRate(22, '9000.00');
+
+        $sale = $this->recordSale($manager, item: $item, manualLines: [[
+            'name' => 'Handwritten ring',
+            'karat' => 22,
+            'weight' => '1.000',
+        ]]);
+
+        $this->actingAs($manager)
+            ->postJson("/api/v1/sales/{$sale->id}/void")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'void');
+
+        $this->assertSame(ItemStatus::InStock, $item->refresh()->status);
+    }
+
     public function test_due_payment_reduces_due_and_is_rejected_above_the_due(): void
     {
         $this->seedApplication();
@@ -535,6 +708,7 @@ class SaleApiTest extends TestCase
         ?Item $item = null,
         string $paid = '0.00',
         array $exchanges = [],
+        array $manualLines = [],
     ): Sale {
         $item ??= $this->tenGramTwentyTwoKItem();
 
@@ -542,7 +716,10 @@ class SaleApiTest extends TestCase
 
         $response = $this->actingAs($user)->postJson('/api/v1/sales', [
             'customer_id' => $customer?->id,
-            'items' => [['item_id' => $item->id]],
+            'items' => [
+                ['item_id' => $item->id],
+                ...$manualLines,
+            ],
             'payments' => $paid === '0.00' ? [] : [['method' => 'cash', 'amount' => $paid]],
             'exchanges' => $exchanges,
         ]);

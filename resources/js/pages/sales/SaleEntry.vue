@@ -18,7 +18,7 @@ const inventoryStore = useInventoryStore()
 const localeStore = useLocaleStore()
 const salesStore = useSalesStore()
 const settingsStore = useSettingsStore()
-const { karatOptions: karatItems, paymentMethodOptions: paymentItems } = useOptionLabels()
+const { karatOptions: karatItems, paymentMethodOptions: paymentItems, makingTypeOptions: makingTypeItems } = useOptionLabels()
 const { formatWeight: formatItemWeight } = useWeightFormatter()
 const currencySymbol = useCurrency()
 const canOverrideRate = computed(() => authStore.can('manage gold rates'))
@@ -36,6 +36,17 @@ const exchanges = ref([])
 const errorMessage = ref('')
 const fieldErrors = reactive({})
 const loadingInitial = ref(false)
+const manualDialog = ref(false)
+const manualEditingIndex = ref(null)
+const manualForm = reactive({
+    name: '',
+    karat: 22,
+    weight: '',
+    rate: '',
+    making_type: 'fixed',
+    making_value: '0.00',
+    stone_price: '0.00',
+})
 
 const vatPercentage = computed(() => Number(settingsStore.settings.vat_percentage || 0))
 const categoryItems = computed(() => inventoryStore.categories.map((category) => ({
@@ -52,7 +63,7 @@ function round2(value) {
 }
 
 function lineAmounts(line) {
-    const weight = Number(line.net_weight || 0)
+    const weight = Number(line.weight || 0)
     const rate = line.rate === '' || line.rate === null ? Number(line.shop_rate || 0) : Number(line.rate)
     const goldValue = round2(weight * rate)
     const makingValue = Number(line.making_value || 0)
@@ -172,7 +183,8 @@ function addItem(item) {
         tag_no: item.tag_no,
         name: item.name,
         karat: item.karat,
-        net_weight: item.net_weight,
+        weight: item.net_weight,
+        manual: false,
         making_type: item.making_type,
         making_value: item.making_value,
         stone_price: item.stone_price,
@@ -182,6 +194,78 @@ function addItem(item) {
     selectedItem.value = null
     itemSearch.value = ''
     itemResults.value = []
+}
+
+function openManualLine() {
+    errorMessage.value = ''
+    manualEditingIndex.value = null
+    Object.assign(manualForm, {
+        name: '',
+        karat: 22,
+        weight: '',
+        rate: '',
+        making_type: 'fixed',
+        making_value: '0.00',
+        stone_price: '0.00',
+    })
+    manualDialog.value = true
+}
+
+function editManualLine(index) {
+    const line = lines.value[index]
+
+    if (!line?.manual) {
+        return
+    }
+
+    errorMessage.value = ''
+    manualEditingIndex.value = index
+    Object.assign(manualForm, {
+        name: line.name,
+        karat: line.karat,
+        weight: line.weight,
+        rate: line.rate,
+        making_type: line.making_type,
+        making_value: line.making_value,
+        stone_price: line.stone_price,
+    })
+    manualDialog.value = true
+}
+
+function saveManualLine() {
+    errorMessage.value = ''
+
+    if (!manualForm.name.trim()) {
+        errorMessage.value = localeStore.t('sales.nameRequired')
+        return
+    }
+
+    if (!(Number(manualForm.weight) > 0)) {
+        errorMessage.value = localeStore.t('sales.weightRequired')
+        return
+    }
+
+    const manualLine = {
+        item_id: null,
+        tag_no: '',
+        name: manualForm.name.trim(),
+        karat: Number(manualForm.karat),
+        weight: Number(manualForm.weight).toFixed(3),
+        manual: true,
+        making_type: manualForm.making_type,
+        making_value: String(manualForm.making_value || 0),
+        stone_price: String(manualForm.stone_price || 0),
+        shop_rate: rateFor(Number(manualForm.karat)),
+        rate: manualForm.rate === '' ? '' : String(manualForm.rate),
+    }
+
+    if (manualEditingIndex.value === null) {
+        lines.value.push(manualLine)
+    } else {
+        lines.value.splice(manualEditingIndex.value, 1, manualLine)
+    }
+
+    manualDialog.value = false
 }
 
 function removeLine(index) {
@@ -226,10 +310,21 @@ function buildPayload() {
         date: date.value,
         discount: discountAmount.value.toFixed(2),
         notes: notes.value.trim() || null,
-        items: lines.value.map((line) => ({
-            item_id: line.item_id,
-            rate: line.rate === '' ? null : Number(line.rate).toFixed(2),
-        })),
+        items: lines.value.map((line) => (line.manual
+            ? {
+                item_id: null,
+                name: line.name,
+                karat: Number(line.karat),
+                weight: line.weight,
+                rate: line.rate === '' ? null : Number(line.rate).toFixed(2),
+                making_type: line.making_type,
+                making_value: Number(line.making_value || 0).toFixed(2),
+                stone_price: Number(line.stone_price || 0).toFixed(2),
+            }
+            : {
+                item_id: line.item_id,
+                rate: line.rate === '' ? null : Number(line.rate).toFixed(2),
+            })),
         payments: payments.value
             .filter((payment) => Number(payment.amount || 0) > 0)
             .map((payment) => ({
@@ -251,28 +346,28 @@ function validate() {
     clearFieldErrors()
 
     if (!lines.value.length) {
-        fieldErrors.items = 'Add at least one item to the sale.'
+        fieldErrors.items = localeStore.t('sales.needOneItem')
     }
 
     if (discountAmount.value > subtotal.value) {
-        fieldErrors.discount = 'The discount cannot be greater than the subtotal.'
+        fieldErrors.discount = localeStore.t('sales.discountTooHigh')
     }
 
     if (total.value < 0) {
-        fieldErrors.exchanges = 'The old gold exchange cannot exceed the invoice total.'
+        fieldErrors.exchanges = localeStore.t('sales.exchangeTooHigh')
     }
 
     if (paid.value > total.value) {
-        fieldErrors.payments = 'The paid amount cannot be greater than the invoice total.'
+        fieldErrors.payments = localeStore.t('sales.paidTooHigh')
     }
 
     exchanges.value.forEach((exchange, index) => {
         if (!exchange.description.trim()) {
-            fieldErrors[`exchanges.${index}.description`] = 'Description is required.'
+            fieldErrors[`exchanges.${index}.description`] = localeStore.t('sales.descriptionRequired')
         }
 
         if (!(Number(exchange.weight) > 0)) {
-            fieldErrors[`exchanges.${index}.weight`] = 'Enter a weight greater than zero.'
+            fieldErrors[`exchanges.${index}.weight`] = localeStore.t('sales.weightPositive')
         }
     })
 
@@ -302,6 +397,7 @@ function reset() {
     lines.value = []
     payments.value = [{ method: 'cash', amount: '', reference: '' }]
     exchanges.value = []
+    manualDialog.value = false
     clearFieldErrors()
     errorMessage.value = ''
 }
@@ -408,25 +504,36 @@ onMounted(load)
                             {{ fieldErrors.items }}
                         </v-alert>
 
-                        <v-autocomplete
-                            v-model="selectedItem"
-                            :items="itemItems"
-                            :loading="itemSearching"
-                            hide-no-data
-                            item-title="title"
-                            item-subtitle="subtitle"
-                            item-value="id"
-                            :label="$t('sales.addItemHint')"
-                            :no-data-text="$t('sales.noItemData')"
-                            return-object
-                            variant="outlined"
-                            @update:search="searchItems"
-                            @update:model-value="addItem"
-                        >
-                            <template #prepend-inner>
-                                <v-icon icon="mdi-barcode-scan" size="20" />
-                            </template>
-                        </v-autocomplete>
+                        <div class="d-flex align-start ga-2">
+                            <v-autocomplete
+                                v-model="selectedItem"
+                                class="flex-grow-1"
+                                :items="itemItems"
+                                :loading="itemSearching"
+                                hide-no-data
+                                item-title="title"
+                                item-subtitle="subtitle"
+                                item-value="id"
+                                :label="$t('sales.addItemHint')"
+                                :no-data-text="$t('sales.noItemData')"
+                                return-object
+                                variant="outlined"
+                                @update:search="searchItems"
+                                @update:model-value="addItem"
+                            >
+                                <template #prepend-inner>
+                                    <v-icon icon="mdi-barcode-scan" size="20" />
+                                </template>
+                            </v-autocomplete>
+                            <v-btn
+                                color="primary"
+                                prepend-icon="mdi-pencil-outline"
+                                variant="tonal"
+                                @click="openManualLine"
+                            >
+                                {{ $t('sales.handwrittenItem') }}
+                            </v-btn>
+                        </div>
                     </v-card-text>
 
                     <v-divider />
@@ -443,22 +550,22 @@ onMounted(load)
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(line, index) in lines" :key="line.item_id">
+                            <tr v-for="(line, index) in lines" :key="line.item_id ?? `manual-${index}`">
                                 <td>
                                     <div class="font-weight-medium">{{ line.name }}</div>
                                     <div class="text-caption text-medium-emphasis">
-                                        {{ line.tag_no }} · {{ line.karat }}K
+                                        {{ line.manual ? $t('sales.handwrittenTag') : line.tag_no }} · {{ line.karat }}K
                                     </div>
                                 </td>
                                 <td class="text-end">
-                                    {{ formatItemWeight(line.net_weight) }}
+                                    {{ formatItemWeight(line.weight) }}
                                 </td>
                                 <td class="text-end">
                                     <v-text-field
                                         v-model="line.rate"
                                         :hint="$t('sales.shopRate', { rate: money(line.shop_rate) })"
                                         persistent-hint
-                                        :placeholder="Number(line.shop_rate).toFixed(2)"
+                                        :placeholder="Number(line.shop_rate || 0).toFixed(2)"
                                         :readonly="!canOverrideRate"
                                         :suffix="currencySymbol"
                                         type="number"
@@ -473,6 +580,14 @@ onMounted(load)
                                     {{ money(lineTotals[index]?.lineTotal) }}
                                 </td>
                                 <td class="text-end">
+                                    <v-btn
+                                        v-if="line.manual"
+                                        :aria-label="$t('sales.handwrittenEdit')"
+                                        icon="mdi-pencil-outline"
+                                        size="small"
+                                        variant="text"
+                                        @click="editManualLine(index)"
+                                    />
                                     <v-btn
                                         :aria-label="$t('sales.removeItem')"
                                         icon="mdi-delete-outline"
@@ -697,5 +812,101 @@ onMounted(load)
                 </v-card>
             </v-col>
         </v-row>
+
+        <v-dialog v-model="manualDialog" max-width="560">
+            <v-card>
+                <v-card-title>
+                    {{ manualEditingIndex === null ? $t('sales.handwrittenTitle') : $t('sales.handwrittenEdit') }}
+                </v-card-title>
+                <v-card-text>
+                    <v-alert class="mb-4" color="info" density="comfortable" variant="tonal">
+                        {{ $t('sales.handwrittenBody') }}
+                    </v-alert>
+                    <v-text-field
+                        v-model="manualForm.name"
+                        autofocus
+                        :label="$t('sales.handwrittenName')"
+                        prepend-inner-icon="mdi-pencil-outline"
+                        required
+                    />
+                    <v-row dense>
+                        <v-col cols="6">
+                            <v-select
+                                v-model="manualForm.karat"
+                                :items="karatItems"
+                                :label="$t('sales.handwrittenKarat')"
+                                variant="outlined"
+                                density="compact"
+                            />
+                        </v-col>
+                        <v-col cols="6">
+                            <v-text-field
+                                v-model="manualForm.weight"
+                                :label="$t('sales.handwrittenWeight')"
+                                min="0.001"
+                                step="0.001"
+                                :suffix="$t('units.gram')"
+                                type="number"
+                                variant="outlined"
+                                density="compact"
+                            />
+                        </v-col>
+                        <v-col cols="6">
+                            <v-text-field
+                                v-model="manualForm.rate"
+                                :hint="$t('sales.shopRate', { rate: money(rateFor(manualForm.karat) ?? 0) })"
+                                persistent-hint
+                                :placeholder="Number(rateFor(manualForm.karat) ?? 0).toFixed(2)"
+                                :readonly="!canOverrideRate"
+                                :suffix="currencySymbol"
+                                type="number"
+                                variant="outlined"
+                                density="compact"
+                            />
+                        </v-col>
+                        <v-col cols="6">
+                            <v-text-field
+                                v-model="manualForm.stone_price"
+                                :label="$t('sales.handwrittenStonePrice')"
+                                min="0"
+                                step="0.01"
+                                :suffix="currencySymbol"
+                                type="number"
+                                variant="outlined"
+                                density="compact"
+                            />
+                        </v-col>
+                        <v-col cols="6">
+                            <v-select
+                                v-model="manualForm.making_type"
+                                :items="makingTypeItems"
+                                :label="$t('sales.handwrittenMakingType')"
+                                variant="outlined"
+                                density="compact"
+                            />
+                        </v-col>
+                        <v-col cols="6">
+                            <v-text-field
+                                v-model="manualForm.making_value"
+                                :label="$t('sales.handwrittenMakingValue')"
+                                min="0"
+                                step="0.01"
+                                :suffix="currencySymbol"
+                                type="number"
+                                variant="outlined"
+                                density="compact"
+                            />
+                        </v-col>
+                    </v-row>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn variant="text" @click="manualDialog = false">{{ $t('common.cancel') }}</v-btn>
+                    <v-btn color="primary" @click="saveManualLine">
+                        {{ manualEditingIndex === null ? $t('common.add') : $t('common.save') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </v-container>
 </template>

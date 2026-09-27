@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>অঞ্জলী জুয়েলার্স - ক্যাশ মেমো</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Baloo+Da+2:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold-light: #fdf1c4;
+    --gold-mid: #e8b923;
+    --gold-deep: #9a6a0a;
+    --gold-shine: #fff6da;
+    --maroon: #7a1030;
+    --maroon-deep: #4d0a1e;
+    --red: #d21b1b;
+    --ink: #2a1608;
+    --paper: #fffcf4;
+    --cream: #fbf3df;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: radial-gradient(ellipse at top, #3a2412, #1c1108 70%);
+    font-family: 'Hind Siliguri', 'Noto Sans Bengali', sans-serif;
+    color: var(--ink);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .toolbar {
+    max-width: 980px;
+    margin: 16px auto 0;
+    padding: 0 16px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .toolbar button {
+    font-family: 'Hind Siliguri', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 24px;
+    border: none;
+    background: linear-gradient(135deg, #f8dc86, #d9a418 55%, #b8860b);
+    color: #3a2000;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0,0,0,.35);
+  }
+  .toolbar button:hover { filter: brightness(1.07); }
+
+  .sheet-wrap {
+    max-width: 980px;
+    margin: 18px auto 50px;
+    padding: 10px;
+    background: linear-gradient(120deg, #fff6da 0%, #e9bd45 18%, #a9720f 38%, #f8dc86 52%, #8a5c08 68%, #f4d685 84%, #fff6da 100%);
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.55);
+    position: relative;
+  }
+  .sheet-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 1px solid rgba(255,255,255,.5);
+    border-radius: 12px;
+    pointer-events: none;
+  }
+  .sheet {
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    /* gold textured background for whole card */
+    background-color: #f2dfa0;
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(255,255,255,.55), transparent 32%),
+      radial-gradient(circle at 88% 15%, rgba(255,255,255,.4), transparent 30%),
+      radial-gradient(circle at 30% 85%, rgba(154,106,10,.35), transparent 40%),
+      radial-gradient(circle at 75% 70%, rgba(255,246,218,.5), transparent 35%),
+      repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 2px, transparent 2px 14px),
+      linear-gradient(160deg, #f7e6ae, #e2bb63 40%, #f6e6ae 70%, #d9a83f 100%);
+  }
+
+  /* Left decorative jewelry panel (stands in for the model photo) */
+  .side-art {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 108px;
+    background: linear-gradient(180deg, #5a1030, #2f0a1b 45%, #1c0610);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 16px 6px;
+    z-index: 3;
+  }
+  .side-art svg { filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+
+  .content-shift { padding-left: 108px; }
+
+  /* Header */
+  .head {
+    position: relative;
+    padding: 30px 34px 14px 34px;
+    text-align: center;
+  }
+  .badge-ribbon {
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    background: linear-gradient(180deg, var(--red), #8f0f0f);
+    color: #fff;
+    padding: 7px 30px;
+    border-radius: 20px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.3);
+    margin-bottom: 8px;
+    border: 1px solid #ffd9d9;
+  }
+  .shopname {
+    font-family: 'Baloo Da 2', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.05;
+    margin: 4px 0 0;
+    background: linear-gradient(180deg, #fff6d8 0%, #f3ca4c 28%, #a9720f 52%, #eecb62 68%, #7a4e05 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 2px rgba(0,0,0,.25);
+    letter-spacing: .5px;
+  }
+  .tagline {
+    font-size: 13px;
+    margin: 10px auto 0;
+    line-height: 1.75;
+    max-width: 560px;
+    color: #3d2a10;
+    font-weight: 500;
+  }
+
+  /* Proprietor corner card */
+  .owner-block {
+    position: absolute;
+    top: 14px;
+    right: 20px;
+    text-align: right;
+    font-size: 13.5px;
+    line-height: 1.6;
+    white-space: nowrap;
+    padding: 10px 18px;
+    background: linear-gradient(160deg, #1c1108, #3a2412);
+    color: var(--gold-shine);
+    border-radius: 10px;
+    border: 1px solid var(--gold-mid);
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  }
+  .owner-block .title { font-size: 11px; letter-spacing: .5px; color: #e8b923; }
+  .owner-block .prop { font-weight: 700; font-size: 16px; color: #fff; margin: 2px 0; }
+  .owner-block .phone { color: var(--gold-mid); font-weight: 600; }
+
+  /* Info row */
+  .info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: rgba(255,253,246,.88);
+    margin: 8px 34px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #ecdca0;
+  }
+  .info-cell {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    font-size: 14px;
+    border-bottom: 1px solid #ecdca0;
+  }
+  .info-cell:nth-child(1), .info-cell:nth-child(3) { border-right: 1px solid #ecdca0; }
+  .info-cell:nth-child(3), .info-cell:nth-child(4) { border-bottom: none; }
+  .info-cell label { font-weight: 600; white-space: nowrap; color: var(--maroon); }
+  .fill-line { border-bottom: 1px dotted #a98a4a; min-height: 20px; }
+
+  .section-gap { height: 20px; }
+
+  /* Table */
+  .table-wrap { padding: 0 34px; position: relative; }
+  table.items {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,.1);
+    background: #fffdf6;
+  }
+  table.items th {
+    background: linear-gradient(180deg, #e23333, #b81616);
+    color: #fff;
+    font-weight: 700;
+    padding: 11px 8px;
+    font-size: 13.5px;
+    letter-spacing: .2px;
+    border: 1px solid #d64545;
+  }
+  table.items td {
+    border: 1px solid #e4d5ac;
+    padding: 9px 8px;
+    vertical-align: top;
+  }
+  table.items tbody tr td { height: 32px; }
+  .col-sl { width: 5%; text-align: center; }
+  .col-desc {
+    width: 23%;
+    background-image: radial-gradient(circle, #d9a418 1.6px, transparent 1.7px);
+    background-size: 14px 14px;
+    background-position: center;
+    opacity: 1;
+  }
+  .col-desc { background-color: #fffaea; }
+  .col-rate { width: 13%; }
+  .col-gold { width: 10%; background: #eef4fb; }
+  .col-silver { width: 10%; background: #f4f4f4; }
+  .col-weight { width: 9%; background: #f2f8ee; }
+  .col-amt { width: 27%; background: var(--cream); }
+
+  .summary-rows td.label { font-weight: 700; font-size: 12.8px; }
+  .summary-rows .en { font-weight: 400; font-size: 10.5px; color: #7a6a48; display: block; }
+  .row-goldprice .label { color: var(--gold-deep); }
+  .row-silverprice .label { color: #607d8b; }
+  .row-stone .label { color: #2e7d32; }
+  .row-wage .label { color: #1976d2; }
+  .row-total .label { color: var(--red); font-size: 14px; }
+  .row-advance .label { color: #6a1b9a; }
+  .row-due .label { color: var(--ink); font-size: 14px; }
+
+  /* Footer */
+  .sign-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    padding: 30px 40px 14px;
+    gap: 16px;
+  }
+  .sign-line {
+    border-top: 1.5px solid var(--gold-deep);
+    padding-top: 6px;
+    font-size: 13px;
+    text-align: center;
+    color: #4a3216;
+    font-weight: 600;
+  }
+  .thanks {
+    font-family: 'Baloo Da 2', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    text-align: center;
+    white-space: nowrap;
+    color: var(--maroon);
+  }
+
+  .terms {
+    font-size: 10px;
+    line-height: 1.8;
+    color: #4a3d28;
+    padding: 12px 34px 4px;
+    border-top: 1px dashed #cbb372;
+    text-align: justify;
+    background: rgba(255,253,246,.7);
+  }
+  .terms span { margin-right: 12px; }
+
+  .bottom-banner {
+    background: linear-gradient(90deg, var(--maroon-deep), var(--maroon) 50%, var(--maroon-deep));
+    color: var(--gold-shine);
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 13px 10px;
+    letter-spacing: .4px;
+    border-top: 2px solid var(--gold-mid);
+  }
+
+  @media (max-width: 700px) {
+    .side-art { width: 60px; }
+    .content-shift { padding-left: 60px; }
+    .head { padding: 20px 16px 12px; }
+    .shopname { font-size: 30px; }
+    .owner-block { position: static; display: inline-block; margin-top: 10px; text-align: center; }
+    .info-row { grid-template-columns: 1fr; margin: 8px 16px 0; }
+    .info-cell:nth-child(1), .info-cell:nth-child(3) { border-right: none; }
+    .table-wrap { padding: 0 12px; }
+    table.items { font-size: 10.5px; }
+    .sign-row { grid-template-columns: 1fr; text-align: center; padding: 24px 16px 12px; }
+    .terms { padding: 10px 16px 4px; }
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none; }
+    .sheet-wrap { margin: 0; max-width: 100%; border-radius: 0; padding: 6px; box-shadow: none; }
+    .sheet { border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button onclick="window.print()">প্রিন্ট করুন / Print</button>
+  </div>
+
+  <div class="sheet-wrap">
+    <div class="sheet" id="memo">
+
+      <!-- Left decorative jewelry strip (in place of a model photo) -->
+      <div class="side-art">
+        <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+          <circle cx="30" cy="18" r="13" stroke="#f2c657" stroke-width="2"/>
+          <path d="M17 27 Q30 45 43 27" stroke="#f2c657" stroke-width="2" fill="none"/>
+          <circle cx="30" cy="45" r="4" fill="#f2c657"/>
+        </svg>
+        <svg width="56" height="40" viewBox="0 0 56 40" fill="none">
+          <ellipse cx="28" cy="14" rx="20" ry="10" stroke="#f2c657" stroke-width="2"/>
+          <circle cx="28" cy="30" r="5" fill="#f2c657"/>
+        </svg>
+        <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+          <circle cx="25" cy="14" r="9" stroke="#f2c657" stroke-width="2"/>
+          <path d="M14 22 L25 42 L36 22" stroke="#f2c657" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+
+      <div class="content-shift">
+        <div class="head">
+          <div class="owner-block">
+            <div class="title">প্রোপ্রাইটর</div>
+            <div class="prop">উৎপল ধর</div>
+            <div class="phone">☎ ０১৮৮৮-৪৮১৪৮৭</div>
+          </div>
+
+          <span class="badge-ribbon">ক্যাশ মেমো</span>
+          <h1 class="shopname">অঞ্জলী জুয়েলার্স</h1>
+          <div class="tagline">
+            এখানে সুদক্ষ কারিগর দ্বারা ২১, ২২ ক্যারেট খাঁটি গিনি সোনা ও রূপার অলঙ্কার তৈরী ও ক্রয়-বিক্রয় করা হয়।<br>
+            মেইন রোড, জেনারেল হাসপাতাল সংলগ্ন, মুরাদনগর, কুমিল্লা।
+          </div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-cell">
+            <label>ক্রমিক নংঃ</label><div class="fill-line"></div>
+            <label>নাম/Name</label><div class="fill-line"></div>
+          </div>
+          <div class="info-cell">
+            <label>অর্ডার/Date</label><div class="fill-line"></div>
+            <label>মোবাইলঃ</label><div class="fill-line"></div>
+          </div>
+          <div class="info-cell">
+            <label>ঠিকানা/Address</label><div class="fill-line"></div>
+            <label>ডেলিভারী/Date</label><div class="fill-line"></div>
+          </div>
+        </div>
+
+        <div class="section-gap"></div>
+
+        <div class="table-wrap">
+        <table class="items">
+          <thead>
+            <tr>
+              <th class="col-sl">ক্রঃ নং</th>
+              <th class="col-desc">বিবরণ</th>
+              <th class="col-rate">দর প্রতি ভরি</th>
+              <th class="col-gold">স্বর্ণ</th>
+              <th class="col-silver">রূপা</th>
+              <th class="col-weight">ওজন</th>
+              <th class="col-amt">টাকা</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-sl"></td>
+              <td class="col-desc"></td>
+              <td class="col-rate"></td>
+              <td class="col-gold"></td>
+              <td class="col-silver"></td>
+              <td class="col-weight"></td>
+              <td rowspan="7" class="col-amt summary-rows">
+                <table style="width:100%; border-collapse:collapse;">
+                  <tr class="row-goldprice"><td class="label" style="border:none; padding:4px;">স্বর্ণের মূল্য <span class="en">Gold Price</span></td></tr>
+                  <tr class="row-silverprice"><td class="label" style="border:none; padding:4px;">রূপার মূল্য <span class="en">Silver Price</span></td></tr>
+                  <tr class="row-stone"><td class="label" style="border:none; padding:4px;">পাথর <span class="en">Stone</span></td></tr>
+                  <tr class="row-wage"><td class="label" style="border:none; padding:4px;">মজুরী <span class="en">M. Charge</span></td></tr>
+                  <tr class="row-total"><td class="label" style="border:none; padding:4px; border-top:1px solid #c9b06a;">মোট মূল্য <span class="en">Total</span></td></tr>
+                  <tr class="row-advance"><td class="label" style="border:none; padding:4px;">অগ্রীম মোট <span class="en">Advance</span></td></tr>
+                  <tr class="row-due"><td class="label" style="border:none; padding:4px; border-top:1px solid #c9b06a;">অবশিষ্ট টাকা <span class="en">Rest of Taka</span></td></tr>
+                </table>
+              </td>
+            </tr>
+            <tr><td class="col-sl"></td><td></td><td></td><td class="col-gold"></td><td class="col-silver"></td><td class="col-weight"></td></tr>
+            <tr><td class="col-sl"></td><td></td><td></td><td class="col-gold"></td><td class="col-silver"></td><td class="col-weight"></td></tr>
+            <tr><td class="col-sl"></td><td></td><td></td><td class="col-gold"></td><td class="col-silver"></td><td class="col-weight"></td></tr>
+            <tr><td class="col-sl"></td><td></td><td></td><td class="col-gold"></td><td class="col-silver"></td><td class="col-weight"></td></tr>
+            <tr><td class="col-sl"></td><td></td><td></td><td class="col-gold"></td><td class="col-silver"></td><td class="col-weight"></td></tr>
+            <tr><td class="col-sl"></td><td></td><td></td><td class="col-gold"></td><td class="col-silver"></td><td class="col-weight"></td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="sign-row">
+          <div class="sign-line">ক্রেতার স্বাক্ষর</div>
+          <div class="thanks">✦ ধন্যবাদ আবার আসবেন ✦</div>
+          <div class="sign-line">বিক্রেতার স্বাক্ষর</div>
+        </div>
+
+        <div class="terms">
+          <span>❖ বিক্রিত গহনার মূল্য অহেরযোগ্য, তবে নির্দিষ্ট অহঙ্কার তিন দিনের মধ্যে বদলায়ে দেওয়া হবে।</span>
+          <span>❖ ডেলিভারীর তারিখ হতে সর্বোচ্চ ৩০ দিনের মধ্যে অলঙ্কার ডেলিভারী নিতে হবে, নতুবা স্বর্ণের দাম বৃদ্ধি পেলে বাড়তি দাম দিয়ে প্রদান করতে হবে।</span>
+          <span>❖ বিবিধ পোশাকগত কারণে ডেলিভারীর তারিখ পরিবর্তিত হতে পারে।</span>
+          <span>❖ প্রোজেক্ট চুড়ি ও নাকেল জিনিস কোনো পরিবর্তন নাই।</span>
+          <span>❖ কারিগরের তৈরীর সময় ওজন বৃদ্ধি অথবা কম হইতে পারে।</span>
+          <span>❖ সর্বশেষে বাংলাদেশে স্বর্ণালঙ্কার মিতিরা নিয়মাবলী প্রযোজ্য।</span>
+          <span>❖ বিক্রয় ও বদলের বেলায় সঠিক ক্যাশ মেমো অবশ্যই সঙ্গে আনতে হবে।</span>
+          <span>❖ মেমো ছাড়া কোনো আপত্তি গ্রহনযোগ্য নয়।</span>
+          <span>❖ ৩০ দিনের মধ্যে বিক্রি করলে মোট দামের ১০% কর্তন হবে।</span>
+          <span>❖ এক মাসের পরে বিক্রি করলে মোট মূল্যের ২০% কর্তন হবে।</span>
+        </div>
+
+        <div class="bottom-banner">
+          ✦ নকশার অভিনবত্বে পাবেন সর্বোর উজ্জ্বল, পাবেন ঐতিহ্যের স্পর্শ, আধুনিকতার হাতছানি ✦
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

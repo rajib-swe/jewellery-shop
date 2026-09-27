@@ -217,7 +217,8 @@ onMounted(load)
                                     <td>
                                         <div class="font-weight-medium">{{ line.name }}</div>
                                         <div class="text-caption text-medium-emphasis">
-                                            {{ line.tag_no }} · {{ line.karat }}K
+                                            {{ line.item_id ? line.tag_no : $t('sales.handwrittenTag') }}
+                                            · {{ line.karat }}K
                                         </div>
                                     </td>
                                     <td class="text-end">{{ formatWeight(line.weight) }}</td>

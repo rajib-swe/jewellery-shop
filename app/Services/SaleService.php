@@ -81,7 +81,16 @@ class SaleService
      *     date?: ?string,
      *     discount?: string|float|int,
      *     notes?: ?string,
-     *     items: list<array{item_id: int, rate?: string|float|null}>,
+     *     items: list<array{
+     *         item_id?: ?int,
+     *         name?: ?string,
+     *         karat?: ?int,
+     *         weight?: string|float|null,
+     *         rate?: string|float|null,
+     *         making_type?: string|null,
+     *         making_value?: string|float|null,
+     *         stone_price?: string|float|null,
+     *     }>,
      *     payments?: list<array{method: string, amount: string|float|int, reference?: ?string}>,
      *     exchanges?: list<array{description: string, karat: int, weight: string|float, rate?: string|float|null, category_id?: ?int}>,
      * }  $data
@@ -115,25 +124,31 @@ class SaleService
             $subtotalCents = 0;
 
             foreach ($lines as $line) {
-                $item = $items->get($line['item_id']);
+                $item = $items->get($line['item_id'] ?? null);
+                $karat = $item === null ? (int) $line['karat'] : $item->karat;
                 $rate = $this->resolveRate(
-                    $item->karat,
+                    $karat,
                     $date,
                     $line['rate'] ?? null,
                     $canOverrideRate,
                     $rateCache,
                 );
-                $weightGrams = (float) $item->net_weight;
+                $weightGrams = $item === null ? (float) $line['weight'] : (float) $item->net_weight;
+                $makingType = $item === null ? MakingType::from($line['making_type'] ?? 'fixed') : $item->making_type;
+                $makingValue = $item === null ? (float) $line['making_value'] : (float) $item->making_value;
+                $stonePriceGrams = $item === null ? (float) ($line['stone_price'] ?? 0) : (float) $item->stone_price;
                 $goldValueCents = $this->toCents($weightGrams * $rate);
-                $makingCents = $this->toCents($this->makingAmount($item, $weightGrams, $goldValueCents));
-                $stonePriceCents = $this->toCents((float) $item->stone_price);
+                $makingCents = $this->toCents(
+                    $this->makingAmount($makingType, $makingValue, $weightGrams, $goldValueCents),
+                );
+                $stonePriceCents = $this->toCents($stonePriceGrams);
                 $lineTotalCents = $goldValueCents + $makingCents + $stonePriceCents;
 
                 $sale->items()->create([
-                    'item_id' => $item->getKey(),
-                    'tag_no' => $item->tag_no,
-                    'name' => $item->name,
-                    'karat' => $item->karat,
+                    'item_id' => $item?->getKey(),
+                    'tag_no' => $item?->tag_no ?? '',
+                    'name' => $item === null ? $line['name'] : $item->name,
+                    'karat' => $karat,
                     'weight' => number_format($weightGrams, 3, '.', ''),
                     'rate' => $this->fromCents($this->toCents($rate)),
                     'gold_value' => $this->fromCents($goldValueCents),
@@ -144,7 +159,9 @@ class SaleService
 
                 $subtotalCents += $lineTotalCents;
 
-                $this->stock->markSold($item, $user, 'sale', (string) $sale->getKey(), $weightGrams);
+                if ($item !== null) {
+                    $this->stock->markSold($item, $user, 'sale', (string) $sale->getKey(), $weightGrams);
+                }
             }
 
             $exchangeCents = 0;
@@ -368,17 +385,24 @@ class SaleService
     }
 
     /**
-     * @param  list<array{item_id: int, rate?: string|float|null}>  $lines
+     * @param  list<array{item_id?: ?int, name?: ?string, karat?: ?int, weight?: ?string|float}>  $lines
      * @return Collection<int, Item>
      */
     private function lockSellableItems(array $lines): Collection
     {
-        $itemIds = array_map(static fn (array $line): int => (int) $line['item_id'], $lines);
+        $itemIds = array_values(array_filter(array_map(
+            static fn (array $line): ?int => isset($line['item_id']) ? (int) $line['item_id'] : null,
+            $lines,
+        )));
 
         if (count($itemIds) !== count(array_unique($itemIds))) {
             throw ValidationException::withMessages([
                 'items' => 'The same item cannot be added to a sale twice.',
             ]);
+        }
+
+        if ($itemIds === []) {
+            return new Collection;
         }
 
         $items = Item::query()
@@ -457,11 +481,13 @@ class SaleService
         return $goldRate === null ? null : (float) $goldRate->rate_per_gram;
     }
 
-    private function makingAmount(Item $item, float $weightGrams, int $goldValueCents): float
-    {
-        $makingValue = (float) $item->making_value;
-
-        return match ($item->making_type) {
+    private function makingAmount(
+        MakingType $makingType,
+        float $makingValue,
+        float $weightGrams,
+        int $goldValueCents,
+    ): float {
+        return match ($makingType) {
             MakingType::PerGram => $makingValue * $weightGrams,
             MakingType::Percent => ($goldValueCents / 100) * ($makingValue / 100),
             default => $makingValue,
