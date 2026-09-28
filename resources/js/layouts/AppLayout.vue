@@ -118,6 +118,12 @@ const navigation = computed(() => [
         permission: 'view accounts',
     },
     {
+        title: localeStore.t('nav.reports'),
+        icon: 'mdi-chart-box-outline',
+        to: { name: 'reports' },
+        permission: 'view reports',
+    },
+    {
         title: localeStore.t('nav.settings'),
         icon: 'mdi-cog-outline',
         to: { name: 'settings' },

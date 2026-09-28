@@ -4,6 +4,7 @@ use App\Http\Controllers\Documents\InvoiceController;
 use App\Http\Controllers\Documents\PawnReceiptController;
 use App\Http\Controllers\Documents\PawnTicketController;
 use App\Http\Controllers\Documents\ReceiptController;
+use App\Http\Controllers\Documents\ReportPrintController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +30,11 @@ Route::middleware(['auth:sanctum', 'permission:view pawns'])->group(function ():
         ->name('pawn-payments.receipt');
     Route::get('/pawn-payments/{pawnPayment}/pdf', PawnReceiptController::class)
         ->name('pawn-payments.pdf');
+});
+
+Route::middleware(['auth:sanctum', 'permission:view reports'])->group(function (): void {
+    Route::get('/reports/{report}/print', ReportPrintController::class)
+        ->name('reports.print');
 });
 
 Route::fallback(function (Request $request) {

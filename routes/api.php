@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\V1\GoldRateController;
 use App\Http\Controllers\Api\V1\ItemController;
 use App\Http\Controllers\Api\V1\PawnController;
 use App\Http\Controllers\Api\V1\PurchaseController;
+use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ReportExportController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\StockController;
@@ -183,6 +185,41 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/purchases/{purchase}', [PurchaseController::class, 'show'])
             ->middleware('permission:view purchases')
             ->name('api.v1.purchases.show');
+
+        Route::get('/reports/dashboard', [ReportController::class, 'dashboard'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.dashboard');
+        Route::get('/reports/sales-trend', [ReportController::class, 'salesTrend'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.sales-trend');
+        Route::get('/reports/sales', [ReportController::class, 'sales'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.sales');
+        Route::get('/reports/stock', [ReportController::class, 'stock'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.stock');
+        Route::get('/reports/pawn-outstanding', [ReportController::class, 'pawnOutstanding'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.pawn-outstanding');
+        Route::get('/reports/overdue-pawns', [ReportController::class, 'overduePawns'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.overdue-pawns');
+        Route::get('/reports/interest-earned', [ReportController::class, 'interestEarned'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.interest-earned');
+        Route::get('/reports/customers/{customer}/ledger', [ReportController::class, 'customerLedger'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.customer-ledger');
+        Route::get('/reports/suppliers/{supplier}/ledger', [ReportController::class, 'supplierLedger'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.supplier-ledger');
+        Route::get('/reports/profit', [ReportController::class, 'profitSummary'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.profit');
+
+        Route::get('/reports/{report}/export', ReportExportController::class)
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.export');
 
         Route::get('/expenses', [ExpenseController::class, 'index'])
             ->middleware('permission:view accounts')

@@ -25,6 +25,15 @@ import Suppliers from '../pages/suppliers/Suppliers.vue'
 import PawnForm from '../pages/pawns/PawnForm.vue'
 import PawnShow from '../pages/pawns/PawnShow.vue'
 import Pawns from '../pages/pawns/Pawns.vue'
+import CustomerLedgerReport from '../pages/reports/CustomerLedgerReport.vue'
+import InterestReport from '../pages/reports/InterestReport.vue'
+import OverduePawnReport from '../pages/reports/OverduePawnReport.vue'
+import PawnReport from '../pages/reports/PawnReport.vue'
+import ProfitReport from '../pages/reports/ProfitReport.vue'
+import ReportIndex from '../pages/reports/ReportIndex.vue'
+import SalesReport from '../pages/reports/SalesReport.vue'
+import StockReport from '../pages/reports/StockReport.vue'
+import SupplierLedgerReport from '../pages/reports/SupplierLedgerReport.vue'
 import SaleEntry from '../pages/sales/SaleEntry.vue'
 import Sales from '../pages/sales/Sales.vue'
 import SaleShow from '../pages/sales/SaleShow.vue'
@@ -228,6 +237,60 @@ const router = createRouter({
                     name: 'daily-closing',
                     component: DailyClosingPage,
                     meta: { permission: 'view accounts' },
+                },
+                {
+                    path: 'reports',
+                    name: 'reports',
+                    component: ReportIndex,
+                    meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'reports/sales',
+                    name: 'report-sales',
+                    component: SalesReport,
+                    meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'reports/stock',
+                    name: 'report-stock',
+                    component: StockReport,
+                    meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'reports/pawns',
+                    name: 'report-pawns',
+                    component: PawnReport,
+                    meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'reports/overdue-pawns',
+                    name: 'report-overdue-pawns',
+                    component: OverduePawnReport,
+                    meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'reports/interest',
+                    name: 'report-interest',
+                    component: InterestReport,
+                    meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'reports/profit',
+                    name: 'report-profit',
+                    component: ProfitReport,
+                    meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'reports/customer-ledger',
+                    name: 'report-customer-ledger',
+                    component: CustomerLedgerReport,
+                    meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'reports/supplier-ledger',
+                    name: 'report-supplier-ledger',
+                    component: SupplierLedgerReport,
+                    meta: { permission: 'view reports' },
                 },
             ],
         },

@@ -52,6 +52,7 @@ class DatabaseSeeder extends Seeder
                 'view accounts',
                 'manage accounts',
                 'close accounts',
+                'view reports',
             ];
 
             foreach ($permissionNames as $permissionName) {
@@ -73,6 +74,7 @@ class DatabaseSeeder extends Seeder
                     'view pawns',
                     'view suppliers',
                     'view accounts',
+                    'view reports',
                 ],
             ];
 

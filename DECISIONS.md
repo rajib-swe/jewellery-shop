@@ -95,6 +95,19 @@
 - `view accounts` is given to `cashier` but `manage accounts` and `close accounts` are not: a cashier counts the drawer at close of trade and needs to see the figures, but posting expenses and locking a day is management's call.
 - Unlike Steps 7 and 8, this step has a feature test (`CashBookApiTest`, 22 cases) and a demo seeder (`AccountSeeder`, which also leaves yesterday closed so the Daily Closing page has a locked day to reopen).
 
+## Step 11
+
+- `ReportService` is the single source for every figure. The screen, the Excel export and the printout all read the same arrays, which is what makes the acceptance rule true: a report cannot disagree with the cash book or the stock summary because none of them computes anything on their own.
+- **Voided sales are excluded from every report.** A voided invoice is an audit record, not revenue, so counting it would overstate sales, profit and the day total. The feature test asserts a voided sale drops out of the sales report entirely.
+- **Stock value is net weight priced at the latest gold rate for that karat**, not a stored cost. An item carries no cost of its own — what the shop paid lives on the purchase — so the rate is the only figure that can honestly value the shelf, and it reuses `GoldRateService` rather than inventing a second rate table. A karat with no rate contributes nothing rather than being guessed at.
+- **Profit is a cash-and-cost statement of the period**: sales value less purchase cost less expenses. It is deliberately not accrual accounting, because that is the number a shop owner reconciles against the drawer. The report labels the sales figure clearly and points at the cash book for what was actually collected, so the two are never confused.
+- **Interest earned is reported on a cash basis** — what was actually collected — with accrued-but-uncollected interest shown as a separate figure. Accrual reporting would mix money in the drawer with money that is only owed, which is the confusion a pawn desk actually has.
+- The **30 day sales chart is hand-drawn SVG** (`SalesTrendChart.vue`). The project ships no charting library and the plan does not add one, so a dependency was not introduced for a single view. Every bar carries a `<title>` tooltip.
+- `ReportPeriod` is shared by all three report entry points, returns the bounds **keyed** as well as positional, and corrects a reversed range by swapping it. A date range typed backwards is a common slip, and rejecting it would be unhelpful. The bounds are corrected together: fixing only `from` would silently collapse a reversed range into a single day, which the feature test now guards.
+- One `ReportExportController` serves every spreadsheet and one `ReportDocument` every printout, rather than eight classes each. A report is a table; only the column layout differs, and that belongs in the controller, not in eight near-identical files.
+- `view reports` is given to `cashier`. Reading the day's takings and what the shop owes is part of counting the drawer; nothing in the report set can change money, so it is safe for the counter.
+- Like Step 9 and Step 10, this step ships a feature test (`ReportApiTest`, 25 cases) covering the report arithmetic, the Excel exports, the PDF output and the permission guard.
+
 ## Interface language
 
 - The shop interface is bilingual with **Bangla as the default**; English is selectable from the language toggle in the top bar. The choice persists in `localStorage` under `jewellery-shop.locale` and sets `<html lang>`.
