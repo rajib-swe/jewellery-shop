@@ -326,6 +326,7 @@ export default {
     },
     options: {
         inStock: 'In stock',
+        in_stock: 'In stock',
         sold: 'Sold',
         pawned: 'Pawned',
         scrap: 'Scrap',
@@ -333,6 +334,7 @@ export default {
         movementOut: 'Stock out',
         movementAdjust: 'Adjustment',
         makingPerGram: 'Per gram',
+        makingPer_gram: 'Per gram',
         makingFixed: 'Fixed',
         makingPercent: 'Percent',
         completed: 'Completed',

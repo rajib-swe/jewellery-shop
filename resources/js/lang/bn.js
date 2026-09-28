@@ -326,6 +326,7 @@ export default {
     },
     options: {
         inStock: 'স্টকে আছে',
+        in_stock: 'স্টকে আছে',
         sold: 'বিক্রিত',
         pawned: 'বণ্দি',
         scrap: 'স্ক্র্যাপ',
@@ -333,6 +334,7 @@ export default {
         movementOut: 'স্টক থেকে বের',
         movementAdjust: 'সমন্বয়',
         makingPerGram: 'প্রতি গ্রাম',
+        makingPer_gram: 'প্রতি গ্রাম',
         makingFixed: 'নির্দিষ্ট',
         makingPercent: 'শতকরা',
         completed: 'সম্পন্ন',

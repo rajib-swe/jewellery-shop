@@ -18,27 +18,27 @@ export function useOptionLabels() {
     })))
 
     const makingTypeOptions = computed(() => MAKING_TYPES.map((value) => ({
-        title: localeStore.t(`options.making${capitalize(value)}`),
+        title: localeStore.t(`options.making${toPascalCase(value)}`),
         value,
     })))
 
     const itemStatusOptions = computed(() => ITEM_STATUSES.map((value) => ({
-        title: localeStore.t(`options.${value}`),
+        title: localeStore.t(`options.${toCamelCase(value)}`),
         value,
     })))
 
     const stockMovementOptions = computed(() => STOCK_MOVEMENT_TYPES.map((value) => ({
-        title: localeStore.t(`options.movement${capitalize(value)}`),
+        title: localeStore.t(`options.movement${toPascalCase(value)}`),
         value,
     })))
 
     const paymentMethodOptions = computed(() => PAYMENT_METHODS.map((value) => ({
-        title: localeStore.t(`options.method${capitalize(value)}`),
+        title: localeStore.t(`options.method${toPascalCase(value)}`),
         value,
     })))
 
     const saleStatusOptions = computed(() => SALE_STATUSES.map((value) => ({
-        title: localeStore.t(`options.${value}`),
+        title: localeStore.t(`options.${toCamelCase(value)}`),
         value,
     })))
 
@@ -53,6 +53,14 @@ export function useOptionLabels() {
     }
 }
 
-function capitalize(value) {
-    return value.charAt(0).toUpperCase() + value.slice(1)
+function toPascalCase(value) {
+    return String(value)
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('')
+}
+
+function toCamelCase(value) {
+    const pascal = toPascalCase(value)
+    return pascal.charAt(0).toLowerCase() + pascal.slice(1)
 }
