@@ -92,7 +92,12 @@ class DatabaseSeeder extends Seeder
             $this->call(SettingSeeder::class);
             $this->call(GoldRateSeeder::class);
             $this->call(CategorySeeder::class);
-            $this->call(CustomerSeeder::class);
+
+            if (app()->environment('local')) {
+                $this->call(CustomerSeeder::class);
+                $this->call(ItemSeeder::class);
+                $this->call(SaleSeeder::class);
+            }
         });
     }
 }

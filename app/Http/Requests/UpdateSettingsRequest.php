@@ -28,6 +28,7 @@ class UpdateSettingsRequest extends FormRequest
             'weight_unit' => ['sometimes', 'required', Rule::in(['gram', 'vori'])],
             'default_pawn_interest_rate' => ['sometimes', 'required', 'numeric', 'decimal:0,2', 'min:0', 'max:100'],
             'invoice_footer' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'invoice_template' => ['sometimes', 'required', Rule::in(['demo1', 'demo2'])],
         ];
     }
 }

@@ -54,14 +54,23 @@ function openPdf(id, size = 'a4', download = false) {
     }
     if (download) {
         query.set('download', '1')
+    } else {
+        query.set('format', 'html')
+        query.set('print', '1')
     }
     window.open(`/sales/${id}/invoice?${query.toString()}`, '_blank')
 }
 
-function openReceipt(paymentId, size = 'a4') {
+function openReceipt(paymentId, size = 'a4', download = false) {
     const query = new URLSearchParams()
     if (size) {
         query.set('size', size)
+    }
+    if (download) {
+        query.set('download', '1')
+    } else {
+        query.set('format', 'html')
+        query.set('print', '1')
     }
     window.open(`/payments/${paymentId}/receipt?${query.toString()}`, '_blank')
 }

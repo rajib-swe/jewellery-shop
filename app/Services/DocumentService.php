@@ -7,42 +7,46 @@ use App\Models\SalePayment;
 use App\SaleStatus;
 use App\Support\DocumentFormat;
 use App\Support\DocumentLabels;
+use App\Support\PdfDocument;
 use App\Support\Weight;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Facades\Storage;
+use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as Pdf;
 
 class DocumentService
 {
     public const SIZES = ['a4', 'thermal'];
 
-    public function __construct(private readonly SettingsService $settings) {}
+    public function __construct(
+        private readonly SettingsService $settings,
+        private readonly GoldRateService $goldRates,
+    ) {}
 
     /**
      * Render the printable sale memo in the requested paper size.
      *
-     * The DomPDF wrapper is returned rather than a response so the controller
+     * The mPDF wrapper is returned rather than a response so the controller
      * can choose between streaming the memo in a new tab and downloading it.
      */
-    public function saleInvoice(Sale $sale, string $size = 'a4'): DomPdf
+    public function saleInvoice(Sale $sale, string $size = 'a4', ?string $template = null): PdfDocument
     {
         $size = $this->normalizeSize($size);
+        $data = $this->saleViewData($sale, $size, $template);
+        $pdf = Pdf::loadView("pdf.sale-invoice-{$size}", $data, [], $this->mpdfConfig($size, $sale));
+        $pdf->getMpdf()->shrink_tables_to_fit = 0;
 
-        return Pdf::loadView("pdf.sale-invoice-{$size}", $this->saleViewData($sale, $size))
-            ->setPaper($this->paperFor($size, $sale))
-            ->setOption('isRemoteEnabled', false);
+        return new PdfDocument($pdf);
     }
 
     /**
      * Render the receipt for a single recorded payment.
      */
-    public function paymentReceipt(SalePayment $payment, string $size = 'a4'): DomPdf
+    public function paymentReceipt(SalePayment $payment, string $size = 'a4'): PdfDocument
     {
         $size = $this->normalizeSize($size);
+        $pdf = Pdf::loadView("pdf.payment-receipt-{$size}", $this->receiptViewData($payment, $size), [], $this->mpdfReceiptConfig($size, $payment));
+        $pdf->getMpdf()->shrink_tables_to_fit = 0;
 
-        return Pdf::loadView("pdf.payment-receipt-{$size}", $this->receiptViewData($payment, $size))
-            ->setPaper($this->paperFor($size, $payment->sale))
-            ->setOption('isRemoteEnabled', false);
+        return new PdfDocument($pdf);
     }
 
     /**
@@ -54,11 +58,16 @@ class DocumentService
      *
      * @return array<string, mixed>
      */
-    public function saleViewData(Sale $sale, ?string $size = null): array
+    public function saleViewData(Sale $sale, ?string $size = null, ?string $template = null): array
     {
         $shop = $this->settings->all();
         $labels = DocumentLabels::all();
         $totalWeightGrams = self::totalWeight($sale);
+        $selectedTemplate = in_array($template, ['demo1', 'demo2'], true) ? $template : ($shop['invoice_template'] ?? 'demo2');
+
+        $latestRates = $this->goldRates->latest()->mapWithKeys(fn ($rate) => [
+            (int) $rate->karat => number_format((float) $rate->rate_per_gram, 0, '.', ','),
+        ])->all();
 
         $lines = $sale->items->values()->map(fn ($item, int $index): array => [
             'serial' => $index + 1,
@@ -129,6 +138,8 @@ class DocumentService
                 'total_vori' => number_format(Weight::gramsToVori($totalWeightGrams), 4, '.', ''),
                 'total_ana' => number_format(Weight::gramsToAna($totalWeightGrams), 2, '.', ''),
             ],
+            'template' => $selectedTemplate,
+            'latestRates' => $latestRates,
             'footer' => $shop['invoice_footer'],
             'printed_at' => now()->format('d M Y, h:i A'),
         ];
@@ -192,15 +203,51 @@ class DocumentService
     }
 
     /**
-     * @return array{0: float, 1: float, 2: float, 3: float}
+     * @return array<string, mixed>
      */
-    private function paperFor(string $size, Sale $sale): array
+    private function mpdfConfig(string $size, Sale $sale): array
     {
         if ($size === 'a4') {
-            return [0, 0, 210, 297];
+            return [
+                'format' => 'A4',
+                'margin_left' => 6,
+                'margin_right' => 6,
+                'margin_top' => 6,
+                'margin_bottom' => 6,
+            ];
         }
 
-        return [2, 2, 80, $this->thermalHeight($sale)];
+        return [
+            'format' => [80, $this->thermalHeight($sale)],
+            'margin_left' => 3,
+            'margin_right' => 3,
+            'margin_top' => 4,
+            'margin_bottom' => 4,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mpdfReceiptConfig(string $size, SalePayment $payment): array
+    {
+        if ($size === 'a4') {
+            return [
+                'format' => 'A4',
+                'margin_left' => 8,
+                'margin_right' => 8,
+                'margin_top' => 8,
+                'margin_bottom' => 8,
+            ];
+        }
+
+        return [
+            'format' => [80, 160.0],
+            'margin_left' => 3,
+            'margin_right' => 3,
+            'margin_top' => 4,
+            'margin_bottom' => 4,
+        ];
     }
 
     /**
@@ -208,13 +255,13 @@ class DocumentService
      */
     private function thermalHeight(Sale $sale): float
     {
-        $height = 86.0
-            + count($sale->items) * 5.6
-            + count($sale->exchanges) * 4.6
-            + count($sale->payments) * 4.4
-            + ($sale->notes ? 6.0 : 0.0);
+        $height = 95.0
+            + count($sale->items) * 10.0
+            + count($sale->exchanges) * 8.0
+            + count($sale->payments) * 8.0
+            + ($sale->notes ? 10.0 : 0.0);
 
-        return min(max($height, 120.0), 400.0);
+        return min(max($height, 130.0), 450.0);
     }
 
     private function logoPath(?string $logo): ?string

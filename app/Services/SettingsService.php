@@ -12,7 +12,7 @@ use Throwable;
 class SettingsService
 {
     /**
-     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string}
+     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string}
      */
     public static function defaults(): array
     {
@@ -26,11 +26,12 @@ class SettingsService
             'weight_unit' => 'gram',
             'default_pawn_interest_rate' => '0.00',
             'invoice_footer' => '',
+            'invoice_template' => 'demo2',
         ];
     }
 
     /**
-     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string}
+     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string}
      */
     public function all(): array
     {
@@ -47,6 +48,7 @@ class SettingsService
             'weight_unit' => (string) ($stored->get('weight_unit', $defaults['weight_unit'])),
             'default_pawn_interest_rate' => (string) ($stored->get('default_pawn_interest_rate', $defaults['default_pawn_interest_rate'])),
             'invoice_footer' => (string) ($stored->get('invoice_footer', $defaults['invoice_footer'])),
+            'invoice_template' => (string) ($stored->get('invoice_template', $defaults['invoice_template'])),
         ];
     }
 

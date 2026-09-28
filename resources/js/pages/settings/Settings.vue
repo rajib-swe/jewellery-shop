@@ -23,6 +23,7 @@ const form = reactive({
     weight_unit: 'gram',
     default_pawn_interest_rate: '0.00',
     invoice_footer: '',
+    invoice_template: 'demo2',
 })
 const logoFile = ref(null)
 const logoPreviewUrl = ref('')
@@ -56,6 +57,7 @@ async function save() {
     payload.append('weight_unit', form.weight_unit)
     payload.append('default_pawn_interest_rate', String(form.default_pawn_interest_rate))
     payload.append('invoice_footer', form.invoice_footer)
+    payload.append('invoice_template', form.invoice_template || 'demo2')
 
     if (logoFile.value) {
         payload.append('shop_logo', logoFile.value)
@@ -197,6 +199,40 @@ onBeforeUnmount(revokePreview)
                                         rows="2"
                                         auto-grow
                                     />
+                                </v-col>
+                                <v-col cols="12">
+                                    <div class="text-subtitle-1 font-weight-bold mb-2">{{ $t('settings.invoiceTemplate') }}</div>
+                                    <v-radio-group v-model="form.invoice_template" :disabled="!canManage" class="mt-1">
+                                        <v-card variant="outlined" class="mb-3 pa-3" :color="form.invoice_template === 'demo2' ? 'primary' : undefined">
+                                            <v-radio value="demo2" color="primary">
+                                                <template #label>
+                                                    <div>
+                                                        <div class="d-flex align-center">
+                                                            <span class="font-weight-bold">{{ $t('settings.templateDemo2') }}</span>
+                                                            <v-chip size="x-small" color="success" class="ms-2" variant="tonal">রেকমেন্ডেড</v-chip>
+                                                        </div>
+                                                        <div class="text-caption text-medium-emphasis mt-1">
+                                                            আধুনিক ক্লিন প্যাড লেআউট, দৈনিক স্বর্ণের রেট-স্ট্রিপ এবং সহজে প্রিন্টযোগ্য ফ্রেমওয়ার্ক।
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </v-radio>
+                                        </v-card>
+                                        <v-card variant="outlined" class="pa-3" :color="form.invoice_template === 'demo1' ? 'primary' : undefined">
+                                            <v-radio value="demo1" color="primary">
+                                                <template #label>
+                                                    <div>
+                                                        <div class="d-flex align-center">
+                                                            <span class="font-weight-bold">{{ $t('settings.templateDemo1') }}</span>
+                                                        </div>
+                                                        <div class="text-caption text-medium-emphasis mt-1">
+                                                            ঐতিহ্যবাহী লাক্সারি গোল্ডেন ও মেরুন ক্যাশ মেমো ফরম্যাট এবং ক্লাসিক অলঙ্করণ।
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </v-radio>
+                                        </v-card>
+                                    </v-radio-group>
                                 </v-col>
                             </v-row>
 

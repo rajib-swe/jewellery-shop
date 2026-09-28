@@ -14,7 +14,16 @@ class ReceiptController extends Controller
     {
         $salePayment->loadMissing(['sale.customer', 'user:id,name']);
 
-        $pdf = $documents->paymentReceipt($salePayment, $request->validated('size') ?? 'a4');
+        $size = $request->validated('size') ?? 'a4';
+
+        if ($request->query('format') === 'html' || $request->query('view') === 'html' || $request->boolean('html') || $request->has('print')) {
+            return response()
+                ->view("pdf.payment-receipt-{$size}", $documents->receiptViewData($salePayment, $size))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache');
+        }
+
+        $pdf = $documents->paymentReceipt($salePayment, $size);
 
         return $request->boolean('download')
             ? $pdf->download("receipt-{$salePayment->id}.pdf")

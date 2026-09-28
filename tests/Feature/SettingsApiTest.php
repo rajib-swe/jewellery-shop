@@ -158,6 +158,24 @@ class SettingsApiTest extends TestCase
         Storage::disk('public')->assertMissing($oldPath);
     }
 
+    public function test_manager_can_update_invoice_template(): void
+    {
+        $this->seedApplication();
+        $manager = $this->userWithRole('manager');
+
+        $this->actingAs($manager)
+            ->putJson('/api/v1/settings', [
+                'invoice_template' => 'demo1',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.invoice_template', 'demo1');
+
+        $this->assertDatabaseHas('settings', [
+            'key' => 'invoice_template',
+            'value' => 'demo1',
+        ]);
+    }
+
     private function seedApplication(): void
     {
         config(['app.admin.password' => 'test-password-123']);

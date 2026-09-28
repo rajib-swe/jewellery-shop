@@ -1,0 +1,385 @@
+<style>
+    @font-face {
+    font-family: 'solaiman-lipi';
+    font-style: normal;
+    font-weight: normal;
+    src: url('D:/laragon/www/php_8.2/goldapp/resources/fonts/SolaimanLipi.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'solaiman-lipi';
+    font-style: normal;
+    font-weight: bold;
+    src: url('D:/laragon/www/php_8.2/goldapp/resources/fonts/SolaimanLipi.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'hind-siliguri';
+    font-style: normal;
+    font-weight: normal;
+    src: url('D:/laragon/www/php_8.2/goldapp/resources/fonts/HindSiliguri-Regular.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'hind-siliguri';
+    font-style: normal;
+    font-weight: bold;
+    src: url('D:/laragon/www/php_8.2/goldapp/resources/fonts/HindSiliguri-Bold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'baloo-da-2';
+    font-style: normal;
+    font-weight: normal;
+    src: url('D:/laragon/www/php_8.2/goldapp/resources/fonts/BalooDa2-Bold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'baloo-da-2';
+    font-style: normal;
+    font-weight: bold;
+    src: url('D:/laragon/www/php_8.2/goldapp/resources/fonts/BalooDa2-Bold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'noto-sans-bengali';
+    font-style: normal;
+    font-weight: normal;
+    src: url('D:/laragon/www/php_8.2/goldapp/resources/fonts/NotoSansBengali-Regular.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'noto-sans-bengali';
+    font-style: normal;
+    font-weight: bold;
+    src: url('D:/laragon/www/php_8.2/goldapp/resources/fonts/NotoSansBengali-Bold.ttf') format('truetype');
+}
+</style>
+
+<style>
+    @page { margin: 10mm 8mm; }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        font-family: 'solaiman-lipi', 'hind-siliguri', 'noto-sans-bengali', sans-serif;
+        font-size: 10.5px;
+        color: #2a1608;
+    }
+
+    table { border-collapse: collapse; width: 100%; }
+
+    .frame { border: 2px solid #b8860b; padding: 0; }
+
+    .frame-inner { border: 1px solid #fdf1c4; padding: 8px 10px; }
+
+    .head { text-align: center; }
+
+    .ribbon {
+        display: inline-block;
+        background-color: #c62828;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: bold;
+        padding: 4px 26px;
+        border: 1px solid #7a1030;
+    }
+
+    .shop-name {
+        font-family: 'solaiman-lipi', 'baloo-da-2', 'hind-siliguri', sans-serif;
+        font-size: 30px;
+        font-weight: bold;
+        color: #b8860b;
+        line-height: 1.3;
+        margin-top: 6px;
+    }
+
+    .shop-tagline { font-size: 10px; color: #4a3216; line-height: 1.6; margin-top: 4px; }
+
+    .shop-contact { font-size: 10px; color: #7a1030; margin-top: 3px; font-weight: bold; }
+
+    .shop-logo { height: 46px; }
+
+    .meta { margin-top: 8px; }
+
+    .meta table { border: 1px solid #d9c68a; }
+
+    .meta td {
+        border: 1px solid #d9c68a;
+        padding: 5px 7px;
+        font-size: 10.5px;
+        vertical-align: top;
+        width: 25%;
+    }
+
+    .meta .label { color: #7a1030; font-weight: bold; white-space: nowrap; width: 1%; }
+
+    .meta .value { background-color: #fffdf6; }
+
+    .en-gloss { font-size: 8px; color: #7a6a48; }
+
+    .void-stamp {
+        margin-top: 6px;
+        text-align: center;
+        border: 2px solid #c62828;
+        color: #c62828;
+        font-size: 13px;
+        font-weight: bold;
+        padding: 3px 0;
+        letter-spacing: 1px;
+    }
+
+    .items { margin-top: 8px; }
+
+    .items th {
+        background-color: #c62828;
+        color: #ffffff;
+        border: 1px solid #9d1f1f;
+        padding: 5px 4px;
+        font-size: 10px;
+        line-height: 1.3;
+    }
+
+    .items td {
+        border: 1px solid #d9c68a;
+        padding: 4px 4px;
+        font-size: 10px;
+        vertical-align: top;
+    }
+
+    .items .num { text-align: right; }
+    .items .ctr { text-align: center; }
+    .items .tag { font-size: 8.5px; color: #7a6a48; }
+
+    .section-title {
+        margin-top: 8px;
+        background-color: #fdf1c4;
+        border: 1px solid #d9c68a;
+        border-bottom: none;
+        padding: 3px 6px;
+        font-weight: bold;
+        color: #7a1030;
+        font-size: 10.5px;
+    }
+
+    .totals { margin-top: 8px; }
+
+    .totals td {
+        border: 1px solid #d9c68a;
+        padding: 4px 6px;
+        font-size: 10.5px;
+    }
+
+    .totals .label { width: 34%; font-weight: bold; color: #7a1030; }
+    .totals .num { text-align: right; width: 16%; }
+    .totals .grand { font-size: 12px; font-weight: bold; color: #c62828; }
+    .totals .due { font-size: 12px; font-weight: bold; color: #2a1608; }
+    .totals .words { font-size: 9.5px; color: #4a3d28; padding: 3px 6px; }
+
+    .payments th, .exchanges th, .payments td, .exchanges td {
+        border: 1px solid #d9c68a;
+        padding: 4px 5px;
+        font-size: 10px;
+    }
+
+    .payments th, .exchanges th { background-color: #fbf3df; color: #7a1030; }
+
+    .sign-row { margin-top: 14px; }
+
+    .sign-row td { width: 33.33%; text-align: center; vertical-align: bottom; }
+
+    .sign-line { border-top: 1px solid #b8860b; padding-top: 3px; font-size: 9.5px; color: #4a3216; }
+
+    .thanks {
+        font-family: 'solaiman-lipi', 'baloo-da-2', 'hind-siliguri', sans-serif;
+        font-size: 13px;
+        color: #7a1030;
+        font-weight: bold;
+    }
+
+    .footer-note {
+        margin-top: 8px;
+        border-top: 1px dashed #d9c68a;
+        padding-top: 5px;
+        font-size: 8.5px;
+        line-height: 1.7;
+        color: #4a3d28;
+        text-align: justify;
+    }
+
+    .banner {
+        margin-top: 6px;
+        background-color: #7a1030;
+        color: #fdf1c4;
+        text-align: center;
+        font-size: 10px;
+        font-weight: bold;
+        padding: 5px;
+    }
+
+    .printed { margin-top: 4px; font-size: 8px; color: #8a7a58; text-align: center; }
+</style>
+
+<table class="frame">
+    <tr>
+        <td>
+            <div class="frame-inner">
+                <table class="head">
+                    <tr>
+                        <td style="width: 22%; vertical-align: middle;">
+                                                    </td>
+                        <td style="width: 56%;">
+                            <span class="ribbon">বিক্রয় মেমো</span>
+                            <div class="shop-name">Jewellery Shop</div>
+                                                                                </td>
+                        <td style="width: 22%; vertical-align: middle; text-align: right;">
+                            <span class="en-gloss">Duplicate</span>
+                        </td>
+                    </tr>
+                </table>
+
+                
+                <table class="meta">
+                    <tr>
+                        <td class="label">ইনভয়েস নং <span class="en-gloss">Invoice No</span></td>
+                        <td class="value">INV-2026-000001</td>
+                        <td class="label">তারিখ <span class="en-gloss">Date</span></td>
+                        <td class="value">28 Sep 2026</td>
+                    </tr>
+                    <tr>
+                        <td class="label">ক্রেতা <span class="en-gloss">Customer</span></td>
+                        <td class="value">মোহাম্মদ করিম</td>
+                        <td class="label">মোবাইল <span class="en-gloss">Phone</span></td>
+                        <td class="value">01811-000001</td>
+                    </tr>
+                                            <tr>
+                                                            <td class="label">ঠিকানা <span class="en-gloss">Address</span></td>
+                                <td class="value" colspan="3">বাড়ি ১২, রোড ৩, ধানমন্ডি, ঢাকা</td>
+                                                    </tr>
+                                    </table>
+
+                <div class="section-title">বিক্রীত পণ্যের তালিকা <span class="en-gloss">Sold Items</span></div>
+                <table class="items">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">ক্রঃ নং</th>
+                            <th style="width: 31%;">বিবরণ<br><span class="en-gloss">Description</span></th>
+                            <th style="width: 7%;">ক্যারেট</th>
+                            <th style="width: 11%;">ওজন<br><span class="en-gloss">গ্রাম</span></th>
+                            <th style="width: 12%;">প্রতি গ্রামের দর</th>
+                            <th style="width: 12%;">স্বর্ণের মূল্য</th>
+                            <th style="width: 10%;">মজুরি</th>
+                            <th style="width: 12%;">মোট</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                                                    <tr>
+                                <td class="ctr">1</td>
+                                <td>
+                                    স্বর্ণের নেকলেস
+                                    <div class="tag">
+                                        ITM-01M3K52T54YH7NM772CNB6NMJ8
+                                    </div>
+                                </td>
+                                <td class="ctr">22K</td>
+                                <td class="num">15.500</td>
+                                <td class="num">৳12,800.00</td>
+                                <td class="num">৳198,400.00</td>
+                                <td class="num">
+                                    ৳4,500.00
+                                                                    </td>
+                                <td class="num">৳202,900.00</td>
+                            </tr>
+                                                    <tr>
+                                <td class="ctr">2</td>
+                                <td>
+                                    ব্রাইডাল নেকলেস সেট
+                                    <div class="tag">
+                                        ITM-01M3K52T5DMXX1TK154HVVZB62
+                                    </div>
+                                </td>
+                                <td class="ctr">22K</td>
+                                <td class="num">23.700</td>
+                                <td class="num">৳12,800.00</td>
+                                <td class="num">৳303,360.00</td>
+                                <td class="num">
+                                    ৳10,665.00
+                                                                            <div class="tag">+ ৳3,500.00 Stone</div>
+                                                                    </td>
+                                <td class="num">৳317,525.00</td>
+                            </tr>
+                                                <tr>
+                            <td colspan="3" style="background-color: #fbf3df;"><strong>ওজন</strong></td>
+                            <td class="num" colspan="2" style="background-color: #fbf3df;">
+                                <strong>39.200 g</strong>
+                            </td>
+                            <td colspan="3" class="num" style="background-color: #fbf3df;">
+                                3.3608 vori
+                                / 53.77 আনা
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                
+                <table class="totals">
+                    <tr>
+                        <td class="label">সাবটোটাল <span class="en-gloss">Subtotal</span></td>
+                        <td class="num">৳520,425.00</td>
+                        <td class="label">অগ্রীম প্রদত্ত <span class="en-gloss">Advance Paid</span></td>
+                        <td class="num">৳510,210.00</td>
+                    </tr>
+                    <tr>
+                        <td class="label">ছাড় <span class="en-gloss">Discount</span></td>
+                        <td class="num">- ৳0.00</td>
+                        <td class="label">অবশিষ্ট টাকা <span class="en-gloss">Balance Due</span></td>
+                        <td class="num due">৳10,215.00</td>
+                    </tr>
+                    <tr>
+                        <td class="label">ভ্যাট <span class="en-gloss">VAT 0.00%</span></td>
+                        <td class="num">৳0.00</td>
+                        <td class="label">পুরোনো সোনা বিনিময় <span class="en-gloss">Old Gold Exchange</span></td>
+                        <td class="num">- ৳0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="label grand">মোট মূল্য <span class="en-gloss">Grand Total</span></td>
+                        <td class="num grand">৳520,425.00</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </table>
+                <div class="totals words">
+                    কথায়: পাঁচ লক্ষ বিশ হাজার চার শত বিশ পাঁচ টাকা মাত্র
+                                            &nbsp;|&nbsp; অবশিষ্ট টাকা: দশ হাজার দুই শত দশ পাঁচ টাকা মাত্র
+                                    </div>
+
+                                    <div class="section-title">প্রদত্ত পেমেন্ট <span class="en-gloss">Payments Received</span></div>
+                    <table class="payments">
+                        <thead>
+                            <tr>
+                                <th style="width: 22%;">মাধ্যম</th>
+                                <th style="width: 30%;">রেফারেন্স</th>
+                                <th style="width: 24%;">গ্রহণকারী</th>
+                                <th style="width: 24%;">৳510,210.00</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr>
+                                    <td>Cash</td>
+                                    <td>CSH-001</td>
+                                    <td>Administrator</td>
+                                    <td class="num">৳510,210.00</td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                
+                                    <div class="footer-note">নগদ পরিশোধকৃত চালান (Customer Copy)</div>
+                
+                <table class="sign-row">
+                    <tr>
+                        <td><div class="sign-line">ক্রেতার স্বাক্ষর</div></td>
+                        <td class="thanks">ধন্যবাদ আবার আসবেন</td>
+                        <td><div class="sign-line">বিক্রেতার স্বাক্ষর</div></td>
+                    </tr>
+                </table>
+
+                
+                <div class="banner">&#10022; Jewellery Shop &#10022;</div>
+                <div class="printed">কম্পিউটারে তৈরি, স্বাক্ষরের প্রয়োজনে উপস্থিত থাকুন। Computer generated memo. &middot; 28 Sep 2026, 05:35 AM</div>
+            </div>
+        </td>
+    </tr>
+</table>

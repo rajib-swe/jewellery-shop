@@ -3,6 +3,7 @@
 @endphp
 @include('pdf.partials.payment-receipt-thermal')
 
+<div class="thermal-container">
 <table>
     <tr>
         <td class="center">
@@ -95,4 +96,5 @@
 <div class="footer">
     <div class="bold">{{ $labels['thanks']['bn'] }}</div>
     {{ $labels['printNote']['bn'] }}<br>{{ $printed_at }}
+</div>
 </div>

@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
@@ -67,6 +68,7 @@ class StockService
         ?string $referenceType = null,
         ?string $referenceId = null,
     ): Item {
+        $tagNo = $data['tag_no'] ?? ('ITM-'.Str::ulid()->toBase32());
         $data = Arr::except($data, ['tag_no', 'net_weight', 'status', 'image']);
         $netWeight = $this->netWeight(
             (float) $data['gross_weight'],
@@ -75,9 +77,10 @@ class StockService
         $photoPath = $this->storePhoto($photo);
 
         try {
-            return DB::transaction(function () use ($data, $netWeight, $photoPath, $user, $status, $referenceType, $referenceId): Item {
+            return DB::transaction(function () use ($data, $tagNo, $netWeight, $photoPath, $user, $status, $referenceType, $referenceId): Item {
                 $item = Item::query()->create([
                     ...$data,
+                    'tag_no' => $tagNo,
                     'net_weight' => $netWeight,
                     'status' => $status,
                     'image' => $photoPath,

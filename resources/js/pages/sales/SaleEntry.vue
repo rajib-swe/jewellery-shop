@@ -384,6 +384,9 @@ function openPdf(id, size = 'a4', download = false) {
     }
     if (download) {
         query.set('download', '1')
+    } else {
+        query.set('format', 'html')
+        query.set('print', '1')
     }
     window.open(`/sales/${id}/invoice?${query.toString()}`, '_blank')
 }

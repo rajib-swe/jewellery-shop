@@ -13,6 +13,10 @@
     $fontDir = str_replace('\\', '/', resource_path('fonts'));
 
     $fonts = [
+        'solaiman-lipi' => [
+            'normal' => 'SolaimanLipi',
+            'bold' => 'SolaimanLipi',
+        ],
         'hind-siliguri' => [
             'normal' => 'HindSiliguri-Regular',
             'bold' => 'HindSiliguri-Bold',

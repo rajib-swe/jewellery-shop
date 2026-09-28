@@ -3,6 +3,7 @@
 @endphp
 @include('pdf.partials.payment-receipt-a4')
 
+<div class="receipt-container">
 <table>
     <tr>
         <td class="center">
@@ -94,3 +95,4 @@
 @endif
 
 <div class="printed">{{ $labels['printNote']['bn'] }} {{ $labels['printNote']['en'] }} &middot; {{ $printed_at }}</div>
+</div>

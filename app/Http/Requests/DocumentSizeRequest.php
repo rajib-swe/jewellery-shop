@@ -20,6 +20,7 @@ class DocumentSizeRequest extends FormRequest
     {
         return [
             'size' => ['sometimes', 'nullable', 'string', Rule::in(DocumentService::SIZES)],
+            'template' => ['sometimes', 'nullable', 'string', Rule::in(['demo1', 'demo2'])],
             'download' => ['sometimes', 'nullable', 'boolean'],
         ];
     }

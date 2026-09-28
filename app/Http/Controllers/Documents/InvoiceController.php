@@ -15,7 +15,17 @@ class InvoiceController extends Controller
     {
         $sale = $sales->find($sale);
 
-        $pdf = $documents->saleInvoice($sale, $request->validated('size') ?? 'a4');
+        $size = $request->validated('size') ?? 'a4';
+        $template = $request->validated('template') ?? $request->query('template');
+
+        if ($request->query('format') === 'html' || $request->query('view') === 'html' || $request->boolean('html') || $request->has('print')) {
+            return response()
+                ->view("pdf.sale-invoice-{$size}", $documents->saleViewData($sale, $size, $template))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache');
+        }
+
+        $pdf = $documents->saleInvoice($sale, $size, $template);
 
         return $request->boolean('download')
             ? $pdf->download("invoice-{$sale->invoice_no}.pdf")
