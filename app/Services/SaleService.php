@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\ItemStatus;
 use App\MakingType;
-use App\Models\GoldRate;
 use App\Models\Item;
 use App\Models\Sale;
 use App\Models\User;
@@ -24,6 +23,7 @@ class SaleService
         private readonly InvoiceNumberService $invoiceNumbers,
         private readonly StockService $stock,
         private readonly SettingsService $settings,
+        private readonly GoldRateService $goldRates,
     ) {}
 
     /**
@@ -471,14 +471,7 @@ class SaleService
 
     private function shopRateFor(int $karat, CarbonInterface $date): ?float
     {
-        $goldRate = GoldRate::query()
-            ->where('karat', $karat)
-            ->whereDate('effective_date', '<=', $date->toDateString())
-            ->orderByDesc('effective_date')
-            ->orderByDesc('id')
-            ->first();
-
-        return $goldRate === null ? null : (float) $goldRate->rate_per_gram;
+        return $this->goldRates->rateFor($karat, $date);
     }
 
     private function makingAmount(

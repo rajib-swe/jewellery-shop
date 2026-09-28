@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\PawnPartialMonthRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +30,11 @@ class UpdateSettingsRequest extends FormRequest
             'default_pawn_interest_rate' => ['sometimes', 'required', 'numeric', 'decimal:0,2', 'min:0', 'max:100'],
             'invoice_footer' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'invoice_template' => ['sometimes', 'required', Rule::in(['demo1', 'demo2'])],
+            'pawn_max_ltv_percentage' => ['sometimes', 'required', 'numeric', 'decimal:0,2', 'min:1', 'max:100'],
+            'pawn_term_days' => ['sometimes', 'required', 'integer', 'min:1', 'max:365'],
+            'pawn_grace_days' => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
+            'pawn_partial_month_rule' => ['sometimes', 'required', Rule::enum(PawnPartialMonthRule::class)],
+            'pawn_terms' => ['sometimes', 'nullable', 'string', 'max:2000'],
         ];
     }
 }

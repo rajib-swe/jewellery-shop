@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\Pawn;
 use App\Models\Sale;
 use App\Models\SalePayment;
 use App\SaleStatus;
@@ -17,6 +18,8 @@ use Throwable;
 
 class CustomerService
 {
+    public function __construct(private readonly PawnInterestService $pawnInterest) {}
+
     /**
      * @param  array{search?: ?string}  $filters
      */
@@ -133,6 +136,15 @@ class CustomerService
             ->orderByDesc('id')
             ->get();
 
+        // Only the interest engine reads this ledger, and it needs exactly
+        // type, amount and date, so the column subset is safe here.
+        $pawns = Pawn::query()
+            ->where('customer_id', $customer->getKey())
+            ->with('payments:id,pawn_id,type,amount,date')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get();
+
         $payments = SalePayment::query()
             ->whereHas('sale', function (Builder $saleQuery) use ($customer): void {
                 $saleQuery->where('customer_id', $customer->getKey());
@@ -146,6 +158,14 @@ class CustomerService
             ->filter(fn (Sale $sale): bool => $sale->status === SaleStatus::Completed)
             ->sum(fn (Sale $sale): int => (int) round((float) $sale->due * 100));
 
+        $pawnDueCents = 0;
+
+        foreach ($pawns as $pawn) {
+            $summary = $this->pawnInterest->calculate($pawn);
+
+            $pawnDueCents += (int) round((float) $summary['total_payable'] * 100);
+        }
+
         return [
             'sales' => $sales->map(fn (Sale $sale): array => [
                 'id' => $sale->id,
@@ -156,7 +176,21 @@ class CustomerService
                 'paid' => (string) $sale->paid,
                 'due' => (string) $sale->due,
             ])->all(),
-            'pawns' => [],
+            'pawns' => $pawns->map(function (Pawn $pawn): array {
+                $summary = $this->pawnInterest->calculate($pawn);
+
+                return [
+                    'id' => $pawn->id,
+                    'pawn_no' => $pawn->pawn_no,
+                    'date' => $pawn->date->toDateString(),
+                    'due_date' => $pawn->due_date->toDateString(),
+                    'status' => $pawn->status->value,
+                    'principal' => (string) $pawn->principal,
+                    'outstanding_principal' => $summary['outstanding_principal'],
+                    'interest_due' => $summary['interest_due'],
+                    'total_payable' => $summary['total_payable'],
+                ];
+            })->all(),
             'payments' => $payments->map(fn (SalePayment $payment): array => [
                 'id' => $payment->id,
                 'invoice_no' => $payment->sale->invoice_no,
@@ -166,7 +200,7 @@ class CustomerService
                 'reference' => $payment->reference,
             ])->all(),
             'due_balance' => number_format(
-                ((int) round((float) $customer->opening_balance * 100) + $dueCents) / 100,
+                ((int) round((float) $customer->opening_balance * 100) + $dueCents + $pawnDueCents) / 100,
                 2,
                 '.',
                 '',

@@ -13,6 +13,15 @@ import CustomerShow from '../pages/customers/CustomerShow.vue'
 import Customers from '../pages/customers/Customers.vue'
 import Login from '../pages/Login.vue'
 import PublicHome from '../pages/PublicHome.vue'
+import PurchaseForm from '../pages/purchases/PurchaseForm.vue'
+import PurchaseShow from '../pages/purchases/PurchaseShow.vue'
+import Purchases from '../pages/purchases/Purchases.vue'
+import SupplierForm from '../pages/suppliers/SupplierForm.vue'
+import SupplierShow from '../pages/suppliers/SupplierShow.vue'
+import Suppliers from '../pages/suppliers/Suppliers.vue'
+import PawnForm from '../pages/pawns/PawnForm.vue'
+import PawnShow from '../pages/pawns/PawnShow.vue'
+import Pawns from '../pages/pawns/Pawns.vue'
 import SaleEntry from '../pages/sales/SaleEntry.vue'
 import Sales from '../pages/sales/Sales.vue'
 import SaleShow from '../pages/sales/SaleShow.vue'
@@ -134,6 +143,66 @@ const router = createRouter({
                     meta: { permission: 'view sales' },
                 },
                 {
+                    path: 'pawns',
+                    name: 'pawns',
+                    component: Pawns,
+                    meta: { permission: 'view pawns' },
+                },
+                {
+                    path: 'pawns/new',
+                    name: 'pawn-create',
+                    component: PawnForm,
+                    meta: { permission: 'manage pawns' },
+                },
+                {
+                    path: 'pawns/:id',
+                    name: 'pawn-profile',
+                    component: PawnShow,
+                    meta: { permission: 'view pawns' },
+                },
+                {
+                    path: 'purchases',
+                    name: 'purchases',
+                    component: Purchases,
+                    meta: { permission: 'view purchases' },
+                },
+                {
+                    path: 'purchases/new',
+                    name: 'purchase-create',
+                    component: PurchaseForm,
+                    meta: { permission: 'manage purchases' },
+                },
+                {
+                    path: 'purchases/:id',
+                    name: 'purchase-profile',
+                    component: PurchaseShow,
+                    meta: { permission: 'view purchases' },
+                },
+                {
+                    path: 'suppliers',
+                    name: 'suppliers',
+                    component: Suppliers,
+                    meta: { permission: 'view suppliers' },
+                },
+                {
+                    path: 'suppliers/new',
+                    name: 'supplier-create',
+                    component: SupplierForm,
+                    meta: { permission: 'manage suppliers' },
+                },
+                {
+                    path: 'suppliers/:id/edit',
+                    name: 'supplier-edit',
+                    component: SupplierForm,
+                    meta: { permission: 'manage suppliers' },
+                },
+                {
+                    path: 'suppliers/:id',
+                    name: 'supplier-profile',
+                    component: SupplierShow,
+                    meta: { permission: 'view suppliers' },
+                },
+                {
                     path: 'settings',
                     name: 'settings',
                     component: Settings,
@@ -152,6 +221,18 @@ const router = createRouter({
         {
             path: '/sales',
             redirect: { name: 'sales' },
+        },
+        {
+            path: '/pawns',
+            redirect: { name: 'pawns' },
+        },
+        {
+            path: '/purchases',
+            redirect: { name: 'purchases' },
+        },
+        {
+            path: '/suppliers',
+            redirect: { name: 'suppliers' },
         },
         {
             path: '/settings',

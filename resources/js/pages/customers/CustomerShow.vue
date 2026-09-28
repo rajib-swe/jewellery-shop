@@ -30,12 +30,6 @@ const tabItems = computed(() => ({
     payments: customerStore.history.payments,
 }))
 
-const tabEmptyText = computed(() => ({
-    sales: localeStore.t('customers.noSales'),
-    pawns: localeStore.t('customers.noPawns'),
-    payments: localeStore.t('customers.noPayments'),
-}))
-
 const notProvided = computed(() => localeStore.t('common.noData'))
 
 function formatMoney(value) {
@@ -240,11 +234,144 @@ onMounted(load)
                                 </v-row>
                             </v-window-item>
 
-                            <v-window-item v-for="tab in tabs.slice(1)" :key="tab.value" :value="tab.value">
+                            <v-window-item value="sales">
+                                <v-table v-if="customerStore.history.sales.length" density="comfortable">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ $t('sales.invoice') }}</th>
+                                            <th>{{ $t('common.date') }}</th>
+                                            <th class="text-end">{{ $t('common.total') }}</th>
+                                            <th class="text-end">{{ $t('common.paid') }}</th>
+                                            <th class="text-end">{{ $t('common.due') }}</th>
+                                            <th class="text-end" />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="sale in customerStore.history.sales"
+                                            :key="sale.id"
+                                        >
+                                            <td>
+                                                <router-link
+                                                    :to="{ name: 'sale-profile', params: { id: sale.id } }"
+                                                >
+                                                    {{ sale.invoice_no }}
+                                                </router-link>
+                                            </td>
+                                            <td>{{ sale.date }}</td>
+                                            <td class="text-end">{{ formatMoney(sale.total) }}</td>
+                                            <td class="text-end">{{ formatMoney(sale.paid) }}</td>
+                                            <td
+                                                class="text-end"
+                                                :class="{ 'text-error font-weight-medium': Number(sale.due) > 0 }"
+                                            >
+                                                {{ formatMoney(sale.due) }}
+                                            </td>
+                                            <td class="text-end">
+                                                <v-chip
+                                                    :color="sale.status === 'void' ? 'error' : 'success'"
+                                                    size="x-small"
+                                                    variant="tonal"
+                                                >
+                                                    {{ $t(`options.${sale.status === 'void' ? 'void' : 'completed'}`) }}
+                                                </v-chip>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
                                 <v-empty-state
-                                    :icon="tab.icon"
-                                    :title="tabEmptyText[tab.value]"
-                                    :text="tabEmptyText[tab.value]"
+                                    v-else
+                                    icon="mdi-receipt-text-outline"
+                                    :title="$t('customers.noSales')"
+                                    :text="$t('customers.noSales')"
+                                />
+                            </v-window-item>
+
+                            <v-window-item value="pawns">
+                                <v-table v-if="customerStore.history.pawns.length" density="comfortable">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ $t('pawns.pawnNo') }}</th>
+                                            <th>{{ $t('pawns.pawnDate') }}</th>
+                                            <th>{{ $t('pawns.dueDate') }}</th>
+                                            <th class="text-end">{{ $t('pawns.principal') }}</th>
+                                            <th class="text-end">{{ $t('pawns.interestDue') }}</th>
+                                            <th class="text-end">{{ $t('pawns.totalPayable') }}</th>
+                                            <th class="text-end">{{ $t('common.status') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="pawn in customerStore.history.pawns"
+                                            :key="pawn.id"
+                                        >
+                                            <td>
+                                                <router-link
+                                                    :to="{ name: 'pawn-profile', params: { id: pawn.id } }"
+                                                >
+                                                    {{ pawn.pawn_no }}
+                                                </router-link>
+                                            </td>
+                                            <td>{{ pawn.date }}</td>
+                                            <td>{{ pawn.due_date }}</td>
+                                            <td class="text-end">{{ formatMoney(pawn.principal) }}</td>
+                                            <td class="text-end">{{ formatMoney(pawn.interest_due) }}</td>
+                                            <td class="text-end font-weight-medium">
+                                                {{ formatMoney(pawn.total_payable) }}
+                                            </td>
+                                            <td class="text-end">
+                                                <v-chip
+                                                    :color="pawn.status === 'redeemed' ? 'success' : (pawn.status === 'forfeited' ? 'error' : 'info')"
+                                                    size="x-small"
+                                                    variant="tonal"
+                                                >
+                                                    {{ $t(`options.${pawn.status}`) }}
+                                                </v-chip>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
+                                <v-empty-state
+                                    v-else
+                                    icon="mdi-handshake-outline"
+                                    :title="$t('customers.noPawns')"
+                                    :text="$t('customers.noPawns')"
+                                />
+                            </v-window-item>
+
+                            <v-window-item value="payments">
+                                <v-table v-if="customerStore.history.payments.length" density="comfortable">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ $t('sales.invoice') }}</th>
+                                            <th>{{ $t('common.date') }}</th>
+                                            <th>{{ $t('common.method') }}</th>
+                                            <th>{{ $t('common.reference') }}</th>
+                                            <th class="text-end">{{ $t('common.amount') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="payment in customerStore.history.payments"
+                                            :key="payment.id"
+                                        >
+                                            <td>{{ payment.invoice_no }}</td>
+                                            <td>{{ payment.date }}</td>
+                                            <td>
+                                                {{ $t(`options.method${payment.method.charAt(0).toUpperCase()}${payment.method.slice(1)}`) }}
+                                            </td>
+                                            <td>{{ payment.reference || '—' }}</td>
+                                            <td class="text-end font-weight-medium">
+                                                {{ formatMoney(payment.amount) }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
+                                <v-empty-state
+                                    v-else
+                                    icon="mdi-cash-multiple"
+                                    :title="$t('customers.noPayments')"
+                                    :text="$t('customers.noPayments')"
                                 />
                             </v-window-item>
                         </v-window>

@@ -42,6 +42,13 @@ class DatabaseSeeder extends Seeder
                 'view sales',
                 'manage sales',
                 'void sales',
+                'view pawns',
+                'manage pawns',
+                'forfeit pawns',
+                'view suppliers',
+                'manage suppliers',
+                'view purchases',
+                'manage purchases',
             ];
 
             foreach ($permissionNames as $permissionName) {
@@ -60,6 +67,8 @@ class DatabaseSeeder extends Seeder
                     'view customers',
                     'view inventory',
                     'view sales',
+                    'view pawns',
+                    'view suppliers',
                 ],
             ];
 
@@ -74,6 +83,10 @@ class DatabaseSeeder extends Seeder
                 'manage inventory',
                 'manage sales',
                 'void sales',
+                'manage pawns',
+                'forfeit pawns',
+                'manage suppliers',
+                'view purchases',
             ]);
 
             $admin = User::firstOrNew([
@@ -97,6 +110,9 @@ class DatabaseSeeder extends Seeder
                 $this->call(CustomerSeeder::class);
                 $this->call(ItemSeeder::class);
                 $this->call(SaleSeeder::class);
+                $this->call(PawnSeeder::class);
+                $this->call(SupplierSeeder::class);
+                $this->call(PurchaseSeeder::class);
             }
         });
     }

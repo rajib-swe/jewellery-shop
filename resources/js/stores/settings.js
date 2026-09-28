@@ -13,6 +13,12 @@ const defaultSettings = {
     weight_unit: 'gram',
     default_pawn_interest_rate: '0.00',
     invoice_footer: '',
+    invoice_template: 'demo2',
+    pawn_max_ltv_percentage: '75.00',
+    pawn_term_days: '30',
+    pawn_grace_days: '30',
+    pawn_partial_month_rule: 'daily_proration',
+    pawn_terms: '',
 }
 
 function errorMessage(error, fallback) {

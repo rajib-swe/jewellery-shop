@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useOptionLabels } from '../../constants/options'
 import { useAuthStore } from '../../stores/auth'
 import { useLocaleStore } from '../../stores/locale'
 import { useSettingsStore } from '../../stores/settings'
@@ -7,6 +8,7 @@ import { useSettingsStore } from '../../stores/settings'
 const authStore = useAuthStore()
 const localeStore = useLocaleStore()
 const settingsStore = useSettingsStore()
+const { pawnPartialMonthRuleOptions: partialMonthItems } = useOptionLabels()
 const canManage = computed(() => authStore.can('manage settings'))
 const weightUnitItems = computed(() => [
     { title: localeStore.t('settings.weightUnitGram'), value: 'gram' },
@@ -24,6 +26,11 @@ const form = reactive({
     default_pawn_interest_rate: '0.00',
     invoice_footer: '',
     invoice_template: 'demo2',
+    pawn_max_ltv_percentage: '75.00',
+    pawn_term_days: '30',
+    pawn_grace_days: '30',
+    pawn_partial_month_rule: 'daily_proration',
+    pawn_terms: '',
 })
 const logoFile = ref(null)
 const logoPreviewUrl = ref('')
@@ -58,6 +65,11 @@ async function save() {
     payload.append('default_pawn_interest_rate', String(form.default_pawn_interest_rate))
     payload.append('invoice_footer', form.invoice_footer)
     payload.append('invoice_template', form.invoice_template || 'demo2')
+    payload.append('pawn_max_ltv_percentage', String(form.pawn_max_ltv_percentage))
+    payload.append('pawn_term_days', String(form.pawn_term_days))
+    payload.append('pawn_grace_days', String(form.pawn_grace_days))
+    payload.append('pawn_partial_month_rule', form.pawn_partial_month_rule)
+    payload.append('pawn_terms', form.pawn_terms)
 
     if (logoFile.value) {
         payload.append('shop_logo', logoFile.value)
@@ -199,6 +211,68 @@ onBeforeUnmount(revokePreview)
                                         rows="2"
                                         auto-grow
                                     />
+                                </v-col>
+                                <v-col cols="12">
+                                    <v-divider class="my-6" />
+
+                                    <div class="text-subtitle-1 font-weight-bold mb-3">
+                                        {{ $t('settings.pawnSection') }}
+                                    </div>
+                                    <v-row>
+                                        <v-col cols="12" md="4">
+                                            <v-text-field
+                                                v-model="form.pawn_max_ltv_percentage"
+                                                :disabled="!canManage"
+                                                :hint="$t('settings.pawnMaxLtvHint')"
+                                                :label="$t('settings.pawnMaxLtv')"
+                                                min="1"
+                                                max="100"
+                                                persistent-hint
+                                                step="0.01"
+                                                suffix="%"
+                                                type="number"
+                                            />
+                                        </v-col>
+                                        <v-col cols="12" sm="6" md="3">
+                                            <v-text-field
+                                                v-model="form.pawn_term_days"
+                                                :disabled="!canManage"
+                                                :label="$t('settings.pawnTermDays')"
+                                                min="1"
+                                                step="1"
+                                                type="number"
+                                            />
+                                        </v-col>
+                                        <v-col cols="12" sm="6" md="3">
+                                            <v-text-field
+                                                v-model="form.pawn_grace_days"
+                                                :disabled="!canManage"
+                                                :label="$t('settings.pawnGraceDays')"
+                                                min="0"
+                                                step="1"
+                                                type="number"
+                                            />
+                                        </v-col>
+                                        <v-col cols="12" md="2">
+                                            <v-select
+                                                v-model="form.pawn_partial_month_rule"
+                                                :disabled="!canManage"
+                                                :items="partialMonthItems"
+                                                :label="$t('settings.pawnPartialMonthRule')"
+                                            />
+                                        </v-col>
+                                        <v-col cols="12">
+                                            <v-textarea
+                                                v-model="form.pawn_terms"
+                                                :disabled="!canManage"
+                                                :hint="$t('pawns.termsHint')"
+                                                :label="$t('settings.pawnTerms')"
+                                                prepend-inner-icon="mdi-format-align-left"
+                                                rows="7"
+                                                auto-grow
+                                            />
+                                        </v-col>
+                                    </v-row>
                                 </v-col>
                                 <v-col cols="12">
                                     <div class="text-subtitle-1 font-weight-bold mb-2">{{ $t('settings.invoiceTemplate') }}</div>

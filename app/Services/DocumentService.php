@@ -2,8 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Customer;
+use App\Models\Pawn;
+use App\Models\PawnItem;
+use App\Models\PawnPayment;
 use App\Models\Sale;
 use App\Models\SalePayment;
+use App\PawnPaymentType;
+use App\PawnStatus;
 use App\SaleStatus;
 use App\Support\DocumentFormat;
 use App\Support\DocumentLabels;
@@ -19,6 +25,7 @@ class DocumentService
     public function __construct(
         private readonly SettingsService $settings,
         private readonly GoldRateService $goldRates,
+        private readonly PawnInterestService $pawnInterest,
     ) {}
 
     /**
@@ -47,6 +54,132 @@ class DocumentService
         $pdf->getMpdf()->shrink_tables_to_fit = 0;
 
         return new PdfDocument($pdf);
+    }
+
+    /**
+     * Render the pawn agreement the customer signs and keeps a copy of.
+     */
+    public function pawnTicket(Pawn $pawn, string $size = 'a4'): PdfDocument
+    {
+        $size = $this->normalizeSize($size);
+        $data = $this->pawnTicketViewData($pawn, $size);
+        $pdf = Pdf::loadView("pdf.pawn-ticket-{$size}", $data, [], $this->mpdfPawnConfig($size, $pawn));
+        $pdf->getMpdf()->shrink_tables_to_fit = 0;
+
+        return new PdfDocument($pdf);
+    }
+
+    /**
+     * Render the receipt for a single pawn ledger entry. A redemption gets its
+     * own layout because it is the document that releases the pledged goods.
+     */
+    public function pawnPaymentReceipt(PawnPayment $payment, string $size = 'a4'): PdfDocument
+    {
+        $size = $this->normalizeSize($size);
+        $isRedemption = $payment->type === PawnPaymentType::Redeem;
+        $view = $isRedemption
+            ? "pdf.redemption-receipt-{$size}"
+            : "pdf.pawn-payment-receipt-{$size}";
+        $data = $this->pawnReceiptViewData($payment, $size);
+
+        $pdf = Pdf::loadView($view, $data, [], $this->mpdfReceiptConfig($size));
+        $pdf->getMpdf()->shrink_tables_to_fit = 0;
+
+        return new PdfDocument($pdf);
+    }
+
+    /**
+     * Build the view payload for a pawn ticket.
+     *
+     * @return array<string, mixed>
+     */
+    public function pawnTicketViewData(Pawn $pawn, ?string $size = null): array
+    {
+        $shop = $this->settings->all();
+        $summary = $this->pawnInterest->calculate($pawn);
+
+        return [
+            ...$this->documentShell('pawn_ticket', $size, $shop),
+            'pawn' => [
+                'pawn_no' => $pawn->pawn_no,
+                'date' => $pawn->date->format('d M Y'),
+                'term_start' => ($pawn->renewed_at ?? $pawn->date)->format('d M Y'),
+                'due_date' => $pawn->due_date->format('d M Y'),
+                'principal' => (string) $pawn->principal,
+                'interest_rate' => (string) $pawn->interest_rate,
+                'interest_type' => $pawn->interest_type->value,
+                'status' => $pawn->status->value,
+                'notes' => $pawn->notes,
+                'is_forfeited' => $pawn->status === PawnStatus::Forfeited,
+                'pledged_value' => $pawn->items->sum(fn (PawnItem $item): float => (float) $item->estimated_value),
+                'loan_to_value' => $this->loanToValuePercentage($pawn),
+            ],
+            'customer' => $this->customerData($pawn->customer),
+            'officer' => $pawn->user?->name ?? '',
+            'items' => $pawn->items->map(fn (PawnItem $item, int $index): array => [
+                'serial' => $index + 1,
+                'description' => $item->description,
+                'karat' => (int) $item->karat,
+                'gross_weight' => DocumentFormat::weight($item->gross_weight, $shop['weight_unit']),
+                'net_weight' => DocumentFormat::weight($item->net_weight, $shop['weight_unit']),
+                'estimated_value' => (string) $item->estimated_value,
+                'photo' => $this->photoUrl($item->photo),
+            ])->all(),
+            'summary' => $this->summaryData($summary),
+            'terms' => $shop['pawn_terms'],
+            'footer' => $shop['invoice_footer'],
+        ];
+    }
+
+    /**
+     * Build the view payload for a pawn payment or redemption receipt.
+     *
+     * @return array<string, mixed>
+     */
+    public function pawnReceiptViewData(PawnPayment $payment, ?string $size = null): array
+    {
+        $shop = $this->settings->all();
+        $pawn = $payment->pawn;
+        $summary = $this->pawnInterest->calculate($pawn);
+        $isRedemption = $payment->type === PawnPaymentType::Redeem;
+
+        return [
+            ...$this->documentShell($isRedemption ? 'redemption' : 'pawn_receipt', $size, $shop),
+            'document_title' => $isRedemption ? 'redemptionReceipt' : 'pawnPaymentReceipt',
+            'receipt' => [
+                'receipt_no' => 'PWN-RCP-'.str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT),
+                'type' => $payment->type->value,
+                'amount' => (string) $payment->amount,
+                'date' => $payment->date->format('d M Y'),
+                'method' => $payment->method->value,
+                'method_label' => DocumentLabels::paymentMethods()[$payment->method->value] ?? $payment->method->value,
+                'reference' => $payment->reference,
+                'note' => $payment->note,
+                'received_by' => $payment->user?->name ?? '',
+                'received_at' => $payment->created_at?->format('d M Y, h:i A') ?? '',
+            ],
+            'pawn' => [
+                'pawn_no' => $pawn->pawn_no,
+                'date' => $pawn->date->format('d M Y'),
+                'due_date' => $pawn->due_date->format('d M Y'),
+                'principal' => (string) $pawn->principal,
+                'interest_rate' => (string) $pawn->interest_rate,
+                'status' => $pawn->status->value,
+                'is_redeemed' => $pawn->status === PawnStatus::Redeemed,
+                'redeemed_at' => $pawn->redeemed_at?->format('d M Y'),
+            ],
+            'customer' => $this->customerData($pawn->customer),
+            'items' => $pawn->items->map(fn (PawnItem $item): array => [
+                'description' => $item->description,
+                'karat' => (int) $item->karat,
+                'net_weight' => DocumentFormat::weight($item->net_weight, $shop['weight_unit']),
+                'estimated_value' => (string) $item->estimated_value,
+            ])->all(),
+            'summary' => $this->summaryData($summary),
+            'amount_in_words' => DocumentFormat::amountInWords($payment->amount),
+            'terms' => $shop['pawn_terms'],
+            'footer' => $shop['invoice_footer'],
+        ];
     }
 
     /**
@@ -229,7 +362,7 @@ class DocumentService
     /**
      * @return array<string, mixed>
      */
-    private function mpdfReceiptConfig(string $size, SalePayment $payment): array
+    private function mpdfReceiptConfig(string $size, ?SalePayment $payment = null): array
     {
         if ($size === 'a4') {
             return [
@@ -242,12 +375,102 @@ class DocumentService
         }
 
         return [
-            'format' => [80, 160.0],
+            'format' => [80, $payment === null ? 160.0 : 160.0],
             'margin_left' => 3,
             'margin_right' => 3,
             'margin_top' => 4,
             'margin_bottom' => 4,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mpdfPawnConfig(string $size, Pawn $pawn): array
+    {
+        if ($size === 'a4') {
+            return [
+                'format' => 'A4',
+                'margin_left' => 8,
+                'margin_right' => 8,
+                'margin_top' => 8,
+                'margin_bottom' => 8,
+            ];
+        }
+
+        return [
+            'format' => [80, $this->pawnThermalHeight($pawn)],
+            'margin_left' => 3,
+            'margin_right' => 3,
+            'margin_top' => 4,
+            'margin_bottom' => 4,
+        ];
+    }
+
+    /**
+     * The shared shop header, labels and printed-at stamp for every document.
+     *
+     * @param  array<string, string>  $shop
+     * @return array<string, mixed>
+     */
+    private function documentShell(string $document, ?string $size, array $shop): array
+    {
+        return [
+            'document' => $document,
+            'size' => $this->normalizeSize($size),
+            'shop' => $shop,
+            'labels' => DocumentLabels::all(),
+            'currency' => $shop['currency_symbol'],
+            'weightUnitLabel' => DocumentFormat::weightUnitLabel($shop['weight_unit']),
+            'shopLogo' => $this->logoPath($shop['shop_logo']),
+            'printed_at' => now()->format('d M Y, h:i A'),
+        ];
+    }
+
+    /**
+     * @return array{id: int, code: string, name: string, phone: string, nid: ?string, address: string}
+     */
+    private function customerData(?Customer $customer): array
+    {
+        return [
+            'id' => (int) ($customer?->id ?? 0),
+            'code' => $customer?->code ?? '',
+            'name' => $customer?->name ?? DocumentLabels::all()['walkIn']['bn'],
+            'phone' => $customer?->phone ?? '',
+            'nid' => $customer?->nid,
+            'address' => $customer?->address ?? '',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $summary
+     * @return array{outstanding_principal: string, principal_paid: string, interest_rate: string, interest_accrued: string, interest_paid: string, interest_due: string, total_paid: string, total_payable: string, as_of: string, partial_month_rule: string}
+     */
+    private function summaryData(array $summary): array
+    {
+        unset($summary['periods']);
+
+        return $summary;
+    }
+
+    private function loanToValuePercentage(Pawn $pawn): string
+    {
+        $pledged = (float) $pawn->items->sum(fn (PawnItem $item): float => (float) $item->estimated_value);
+
+        if ($pledged <= 0) {
+            return '0.00';
+        }
+
+        return number_format((float) $pawn->principal / $pledged * 100, 2, '.', '');
+    }
+
+    private function photoUrl(?string $photo): ?string
+    {
+        if ($photo === null || $photo === '') {
+            return null;
+        }
+
+        return Storage::disk('public')->url($photo);
     }
 
     /**
@@ -262,6 +485,18 @@ class DocumentService
             + ($sale->notes ? 10.0 : 0.0);
 
         return min(max($height, 130.0), 450.0);
+    }
+
+    /**
+     * Thermal rolls are continuous, so the page is sized to the content.
+     */
+    private function pawnThermalHeight(Pawn $pawn): float
+    {
+        $height = 110.0
+            + count($pawn->items) * 10.0
+            + 45.0;
+
+        return min(max($height, 180.0), 600.0);
     }
 
     private function logoPath(?string $logo): ?string

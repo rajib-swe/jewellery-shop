@@ -5,6 +5,33 @@ Put this file in the project root. Tell your agent: **"Read AGENT_BUILD_PLAN.md.
 
 ---
 
+## Build options (the user sets these; read before every step)
+
+| Option | Value |
+| --- | --- |
+| Feature tests | `skip` |
+| Demo seed data | `write` |
+
+**Feature tests**
+
+- `skip` — do not write Feature tests for the new service or endpoint group. Ship a
+  `database/seeders/` seeder that covers every branch of the new module instead, wired into
+  `DatabaseSeeder` behind the existing `local` environment guard, so the step can be driven from the
+  browser. State plainly in the summary which acceptance checks are therefore unverified.
+- `write` — add at least one Feature test per service or endpoint group, as rule 9 requires.
+
+**Demo seed data**
+
+- `write` — always ship a seeder for the new module, so it can be driven by hand regardless of the
+  feature test setting.
+- `skip` — no new seeder for this step.
+
+Rule 9 and the definition of done below follow whichever value is set here. Flip a value and both
+change with it. The user may also override an option for a single step in their instruction; that
+wins for that step only, and belongs in the step history table at the bottom.
+
+---
+
 ## 0. Rules for the agent (read every time)
 
 1. Work on **one step at a time**. Never start the next step until the current one is checked off and committed.
@@ -15,7 +42,7 @@ Put this file in the project root. Tell your agent: **"Read AGENT_BUILD_PLAN.md.
 6. **All weights are stored in grams** as `decimal(12,3)`. Money is `decimal(14,2)`. Convert units only in the UI, via one shared helper.
 7. Every state change to stock goes through the `stock_movements` table.
 8. Every model that matters uses `spatie/laravel-activitylog`. Every route is guarded by a `spatie/laravel-permission` permission.
-9. Write at least one Feature test per service or endpoint group. Run `php artisan test` before finishing a step.
+9. Feature tests: follow the **Feature tests** option in *Build options* above. When it is `write`, add at least one Feature test per service or endpoint group. Either way, run `php artisan test` before finishing a step.
 10. After each step: update the checklist at the bottom, then commit with the given message.
 11. If something is ambiguous, pick the simplest option, write the assumption in `DECISIONS.md`, and continue.
 
@@ -301,9 +328,9 @@ Commit: `feat: admin, audit log, backup and hardening`
 - [x] Step 4: Gold inventory
 - [x] Step 5: Sale entry
 - [x] Step 6: Invoice printing
-- [ ] Step 7: Pawn account
-- [ ] Step 8: Pawn printing
-- [ ] Step 9: Suppliers and purchases
+- [x] Step 7: Pawn account
+- [x] Step 8: Pawn printing
+- [x] Step 9: Suppliers and purchases
 - [ ] Step 10: Accounts and cash book
 - [ ] Step 11: Reports and dashboard
 - [ ] Step 12: Admin, audit, backup, hardening
@@ -313,9 +340,23 @@ Commit: `feat: admin, audit log, backup and hardening`
 ## Definition of done for every step
 
 - Migrations run fresh (`php artisan migrate:fresh --seed`) without errors.
-- Tests pass (`php artisan test`).
+- `php artisan test` passes. When **Feature tests** is `write`, the new endpoint group is covered; when it is `skip`, say which acceptance checks are unverified.
 - Vue build passes (`npm run build`) with no console errors on the new pages.
 - Permissions applied to every new route and menu item.
 - Checklist updated and commit made.
+- Any assumption made under rule 11 is written to `DECISIONS.md` in that step's section.
+
+---
+
+## Step history
+
+Which option each step was built under, so later steps know what is and is not covered.
+
+| Step | Feature tests | Demo seed data |
+| --- | --- | --- |
+| 1-6 | write | write |
+| 7 | skip | write |
+| 8 | skip | write |
+| 9 | write | write |
 
 

@@ -84,7 +84,7 @@ class DatabaseSeederTest extends TestCase
 
         $this->seed(DatabaseSeeder::class);
 
-        $this->assertDatabaseCount('settings', 9);
+        $this->assertDatabaseCount('settings', 15);
         $this->assertDatabaseHas('settings', [
             'key' => 'shop_name',
             'value' => 'Administrator Shop Name',

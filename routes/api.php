@@ -5,9 +5,12 @@ use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\GoldRateController;
 use App\Http\Controllers\Api\V1\ItemController;
+use App\Http\Controllers\Api\V1\PawnController;
+use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\StockController;
+use App\Http\Controllers\Api\V1\SupplierController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -120,5 +123,62 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/sales/{sale}/void', [SaleController::class, 'void'])
             ->middleware('permission:void sales')
             ->name('api.v1.sales.void');
+
+        Route::get('/pawns', [PawnController::class, 'index'])
+            ->middleware('permission:view pawns')
+            ->name('api.v1.pawns.index');
+        Route::post('/pawns', [PawnController::class, 'store'])
+            ->middleware('permission:manage pawns')
+            ->name('api.v1.pawns.store');
+        Route::get('/pawns/{pawn}', [PawnController::class, 'show'])
+            ->middleware('permission:view pawns')
+            ->name('api.v1.pawns.show');
+        Route::post('/pawns/{pawn}/payments', [PawnController::class, 'addPayment'])
+            ->middleware('permission:manage pawns')
+            ->name('api.v1.pawns.payments.store');
+        Route::post('/pawns/{pawn}/redeem', [PawnController::class, 'redeem'])
+            ->middleware('permission:manage pawns')
+            ->name('api.v1.pawns.redeem');
+        Route::post('/pawns/{pawn}/renew', [PawnController::class, 'renew'])
+            ->middleware('permission:manage pawns')
+            ->name('api.v1.pawns.renew');
+        Route::post('/pawns/{pawn}/forfeit', [PawnController::class, 'forfeit'])
+            ->middleware('permission:forfeit pawns')
+            ->name('api.v1.pawns.forfeit');
+
+        Route::get('/suppliers', [SupplierController::class, 'index'])
+            ->middleware('permission:view suppliers')
+            ->name('api.v1.suppliers.index');
+        Route::post('/suppliers', [SupplierController::class, 'store'])
+            ->middleware('permission:manage suppliers')
+            ->name('api.v1.suppliers.store');
+        Route::get('/suppliers/{supplier}/ledger', [SupplierController::class, 'ledger'])
+            ->middleware('permission:view suppliers')
+            ->name('api.v1.suppliers.ledger');
+        Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'addPayment'])
+            ->middleware('permission:manage suppliers')
+            ->name('api.v1.suppliers.payments.store');
+        Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])
+            ->middleware('permission:view suppliers')
+            ->name('api.v1.suppliers.show');
+        Route::match(['put', 'patch'], '/suppliers/{supplier}', [SupplierController::class, 'update'])
+            ->middleware('permission:manage suppliers')
+            ->name('api.v1.suppliers.update');
+        Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])
+            ->middleware('permission:manage suppliers')
+            ->name('api.v1.suppliers.destroy');
+
+        Route::get('/purchases/rates', [PurchaseController::class, 'rates'])
+            ->middleware('permission:view purchases')
+            ->name('api.v1.purchases.rates');
+        Route::get('/purchases', [PurchaseController::class, 'index'])
+            ->middleware('permission:view purchases')
+            ->name('api.v1.purchases.index');
+        Route::post('/purchases', [PurchaseController::class, 'store'])
+            ->middleware('permission:manage purchases')
+            ->name('api.v1.purchases.store');
+        Route::get('/purchases/{purchase}', [PurchaseController::class, 'show'])
+            ->middleware('permission:view purchases')
+            ->name('api.v1.purchases.show');
     });
 });

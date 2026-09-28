@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 class SettingsResource extends JsonResource
 {
     /**
-     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, shop_logo_url: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string}
+     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, shop_logo_url: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string, pawn_max_ltv_percentage: string, pawn_term_days: string, pawn_grace_days: string, pawn_partial_month_rule: string, pawn_terms: string}
      */
     public function toArray(Request $request): array
     {

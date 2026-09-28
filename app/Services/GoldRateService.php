@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\GoldRate;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -45,6 +46,26 @@ class GoldRateService
             ->orderByDesc('effective_date')
             ->orderByDesc('id')
             ->paginate(perPage: $perPage, page: $page);
+    }
+
+    /**
+     * The single rate source for money that moves against gold.
+     *
+     * Sales, purchases, pawn estimates and every printout resolve the karat rate
+     * through here, so "the rate effective on this date" can only ever mean one
+     * thing. A karat with no rate on or before the date returns null and the
+     * caller decides whether that is an error.
+     */
+    public function rateFor(int $karat, CarbonInterface $date): ?float
+    {
+        $goldRate = GoldRate::query()
+            ->where('karat', $karat)
+            ->whereDate('effective_date', '<=', $date->toDateString())
+            ->orderByDesc('effective_date')
+            ->orderByDesc('id')
+            ->first();
+
+        return $goldRate === null ? null : (float) $goldRate->rate_per_gram;
     }
 
     public function latest(): Collection

@@ -46,6 +46,36 @@ const navigation = computed(() => [
         permission: 'manage sales',
     },
     {
+        title: localeStore.t('nav.pawns'),
+        icon: 'mdi-handshake-outline',
+        to: { name: 'pawns' },
+        permission: 'view pawns',
+    },
+    {
+        title: localeStore.t('nav.newPawn'),
+        icon: 'mdi-plus-circle-outline',
+        to: { name: 'pawn-create' },
+        permission: 'manage pawns',
+    },
+    {
+        title: localeStore.t('nav.purchases'),
+        icon: 'mdi-truck-delivery-outline',
+        to: { name: 'purchases' },
+        permission: 'view purchases',
+    },
+    {
+        title: localeStore.t('nav.newPurchase'),
+        icon: 'mdi-cart-arrow-down',
+        to: { name: 'purchase-create' },
+        permission: 'manage purchases',
+    },
+    {
+        title: localeStore.t('nav.suppliers'),
+        icon: 'mdi-store-account-outline',
+        to: { name: 'suppliers' },
+        permission: 'view suppliers',
+    },
+    {
         title: localeStore.t('nav.items'),
         icon: 'mdi-package-variant-closed',
         to: { name: 'items' },

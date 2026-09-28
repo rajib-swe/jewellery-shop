@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use App\PawnPartialMonthRule;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -12,7 +13,7 @@ use Throwable;
 class SettingsService
 {
     /**
-     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string}
+     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string, pawn_max_ltv_percentage: string, pawn_term_days: string, pawn_grace_days: string, pawn_partial_month_rule: string, pawn_terms: string}
      */
     public static function defaults(): array
     {
@@ -27,11 +28,16 @@ class SettingsService
             'default_pawn_interest_rate' => '0.00',
             'invoice_footer' => '',
             'invoice_template' => 'demo2',
+            'pawn_max_ltv_percentage' => '75.00',
+            'pawn_term_days' => '30',
+            'pawn_grace_days' => '30',
+            'pawn_partial_month_rule' => PawnPartialMonthRule::DailyProration->value,
+            'pawn_terms' => '',
         ];
     }
 
     /**
-     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string}
+     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string, pawn_max_ltv_percentage: string, pawn_term_days: string, pawn_grace_days: string, pawn_partial_month_rule: string, pawn_terms: string}
      */
     public function all(): array
     {
@@ -49,12 +55,19 @@ class SettingsService
             'default_pawn_interest_rate' => (string) ($stored->get('default_pawn_interest_rate', $defaults['default_pawn_interest_rate'])),
             'invoice_footer' => (string) ($stored->get('invoice_footer', $defaults['invoice_footer'])),
             'invoice_template' => (string) ($stored->get('invoice_template', $defaults['invoice_template'])),
+            'pawn_max_ltv_percentage' => (string) ($stored->get('pawn_max_ltv_percentage', $defaults['pawn_max_ltv_percentage'])),
+            'pawn_term_days' => (string) ($stored->get('pawn_term_days', $defaults['pawn_term_days'])),
+            'pawn_grace_days' => (string) ($stored->get('pawn_grace_days', $defaults['pawn_grace_days'])),
+            'pawn_partial_month_rule' => PawnPartialMonthRule::tryFrom(
+                (string) $stored->get('pawn_partial_month_rule', $defaults['pawn_partial_month_rule']),
+            )?->value ?? $defaults['pawn_partial_month_rule'],
+            'pawn_terms' => (string) ($stored->get('pawn_terms', $defaults['pawn_terms'])),
         ];
     }
 
     /**
      * @param  array<string, mixed>  $values
-     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string}
+     * @return array{shop_name: string, shop_address: string, shop_phone: string, shop_logo: ?string, vat_percentage: string, currency_symbol: string, weight_unit: string, default_pawn_interest_rate: string, invoice_footer: string, invoice_template: string, pawn_max_ltv_percentage: string, pawn_term_days: string, pawn_grace_days: string, pawn_partial_month_rule: string, pawn_terms: string}
      */
     public function update(array $values, ?UploadedFile $logo = null, bool $removeLogo = false): array
     {
@@ -105,8 +118,12 @@ class SettingsService
 
     private function normalizeValue(string $key, mixed $value): string
     {
-        if (in_array($key, ['vat_percentage', 'default_pawn_interest_rate'], true)) {
+        if (in_array($key, ['vat_percentage', 'default_pawn_interest_rate', 'pawn_max_ltv_percentage'], true)) {
             return number_format((float) $value, 2, '.', '');
+        }
+
+        if (in_array($key, ['pawn_term_days', 'pawn_grace_days'], true)) {
+            return (string) max(0, (int) $value);
         }
 
         return $value === null ? '' : (string) $value;

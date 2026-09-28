@@ -3,6 +3,13 @@ import { useLocaleStore } from '../stores/locale'
 import { ITEM_STATUSES, KARAT_VALUES, MAKING_TYPES, STOCK_MOVEMENT_TYPES } from './inventory'
 import { PAYMENT_METHODS, SALE_STATUSES } from './sales'
 import { GOLD_KARAT_VALUES } from './gold-rates'
+import { SUPPLIER_TYPES } from './suppliers'
+import {
+    PAWN_INTEREST_TYPES,
+    PAWN_PARTIAL_MONTH_RULES,
+    PAWN_PAYMENT_TYPES,
+    PAWN_STATUSES,
+} from './pawns'
 
 export function useOptionLabels() {
     const localeStore = useLocaleStore()
@@ -42,6 +49,31 @@ export function useOptionLabels() {
         value,
     })))
 
+    const pawnStatusOptions = computed(() => PAWN_STATUSES.map((value) => ({
+        title: localeStore.t(`options.${toCamelCase(value)}`),
+        value,
+    })))
+
+    const pawnPaymentTypeOptions = computed(() => PAWN_PAYMENT_TYPES.map((value) => ({
+        title: localeStore.t(`options.pawnType${toPascalCase(value)}`),
+        value,
+    })))
+
+    const pawnInterestTypeOptions = computed(() => PAWN_INTEREST_TYPES.map((value) => ({
+        title: localeStore.t(`options.pawnInterest${toPascalCase(value)}`),
+        value,
+    })))
+
+    const pawnPartialMonthRuleOptions = computed(() => PAWN_PARTIAL_MONTH_RULES.map((value) => ({
+        title: localeStore.t(`options.partialMonth${toPascalCase(value)}`),
+        value,
+    })))
+
+    const supplierTypeOptions = computed(() => SUPPLIER_TYPES.map((value) => ({
+        title: localeStore.t(`options.${toCamelCase(value)}`),
+        value,
+    })))
+
     return {
         karatOptions,
         goldKaratOptions,
@@ -50,6 +82,11 @@ export function useOptionLabels() {
         stockMovementOptions,
         paymentMethodOptions,
         saleStatusOptions,
+        pawnStatusOptions,
+        pawnPaymentTypeOptions,
+        pawnInterestTypeOptions,
+        pawnPartialMonthRuleOptions,
+        supplierTypeOptions,
     }
 }
 
