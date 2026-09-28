@@ -483,7 +483,7 @@ class SaleApiTest extends TestCase
             ],
         ])
             ->assertCreated()
-            ->assertJsonPath('data.subtotal', '99000.00')
+            ->assertJsonPath('data.subtotal', '99500.00')
             ->assertJsonCount(2, 'data.items');
 
         $this->assertSame(ItemStatus::Sold, $item->refresh()->status);

@@ -54,6 +54,31 @@ class DocumentPrintTest extends TestCase
         $this->assertPdfBody($response);
     }
 
+    public function test_sales_pdf_endpoint_renders_a_pdf(): void
+    {
+        $user = $this->userWithRole('manager');
+        $sale = $this->recordSale($user);
+
+        $response = $this->actingAs($user)->get("/sales/{$sale->id}/pdf");
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+        $this->assertPdfBody($response);
+    }
+
+    public function test_payment_pdf_endpoint_renders_a_pdf(): void
+    {
+        $user = $this->userWithRole('manager');
+        $sale = $this->recordSale($user);
+        $payment = $sale->payments()->firstOrFail();
+
+        $response = $this->actingAs($user)->get("/payments/{$payment->id}/pdf");
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+        $this->assertPdfBody($response);
+    }
+
     public function test_a4_invoice_html_contains_bangla_names_invoice_and_totals(): void
     {
         $user = $this->userWithRole('manager');

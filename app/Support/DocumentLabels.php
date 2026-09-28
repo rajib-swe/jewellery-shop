@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Services\DocumentService;
+
 /**
  * Bilingual labels for printable documents.
  *
@@ -9,7 +11,7 @@ namespace App\Support;
  * string plus a smaller English gloss, exactly like the printed cash memo the
  * counter staff are used to. There are no PHP language files in this project,
  * so the labels are resolved here and passed into the views by
- * {@see \App\Services\DocumentService}.
+ * {@see DocumentService}.
  */
 final class DocumentLabels
 {

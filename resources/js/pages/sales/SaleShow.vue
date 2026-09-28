@@ -47,6 +47,25 @@ function capitalize(value) {
     return String(value).charAt(0).toUpperCase() + String(value).slice(1)
 }
 
+function openPdf(id, size = 'a4', download = false) {
+    const query = new URLSearchParams()
+    if (size) {
+        query.set('size', size)
+    }
+    if (download) {
+        query.set('download', '1')
+    }
+    window.open(`/sales/${id}/invoice?${query.toString()}`, '_blank')
+}
+
+function openReceipt(paymentId, size = 'a4') {
+    const query = new URLSearchParams()
+    if (size) {
+        query.set('size', size)
+    }
+    window.open(`/payments/${paymentId}/receipt?${query.toString()}`, '_blank')
+}
+
 async function load() {
     errorMessage.value = ''
     salesStore.clearCurrent()
@@ -147,6 +166,35 @@ onMounted(load)
                         </v-card-text>
                     </div>
                     <div class="d-flex flex-wrap ga-2">
+                        <v-menu v-if="sale">
+                            <template #activator="{ props }">
+                                <v-btn
+                                    color="secondary"
+                                    prepend-icon="mdi-printer"
+                                    v-bind="props"
+                                >
+                                    {{ $t('sales.printInvoice') }}
+                                </v-btn>
+                            </template>
+                            <v-list density="compact">
+                                <v-list-item
+                                    prepend-icon="mdi-file-document-outline"
+                                    :title="$t('sales.printA4')"
+                                    @click="openPdf(sale.id, 'a4')"
+                                />
+                                <v-list-item
+                                    prepend-icon="mdi-receipt-text-outline"
+                                    :title="$t('sales.printThermal')"
+                                    @click="openPdf(sale.id, 'thermal')"
+                                />
+                                <v-divider />
+                                <v-list-item
+                                    prepend-icon="mdi-download"
+                                    :title="$t('sales.downloadPdf')"
+                                    @click="openPdf(sale.id, 'a4', true)"
+                                />
+                            </v-list>
+                        </v-menu>
                         <v-btn
                             v-if="canManage && sale && !isVoided && Number(sale.due) > 0"
                             color="primary"
@@ -281,8 +329,18 @@ onMounted(load)
                                         {{ $t(`options.method${capitalize(payment.method)}`) }}
                                     </v-chip>
                                 </template>
-                                <template v-if="payment.reference" #append>
-                                    <span class="text-caption text-medium-emphasis">{{ payment.reference }}</span>
+                                <template #append>
+                                    <div class="d-flex align-center ga-2">
+                                        <span v-if="payment.reference" class="text-caption text-medium-emphasis">{{ payment.reference }}</span>
+                                        <v-btn
+                                            density="compact"
+                                            icon="mdi-printer"
+                                            size="small"
+                                            variant="text"
+                                            :title="$t('sales.printReceipt')"
+                                            @click="openReceipt(payment.id, 'a4')"
+                                        />
+                                    </div>
                                 </template>
                             </v-list-item>
                         </v-list>

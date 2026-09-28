@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\ItemStatus;
 use App\Models\Category;
+use App\Models\Customer;
 use App\Models\GoldRate;
 use App\Models\Item;
 use App\Models\Sale;
@@ -19,10 +20,11 @@ class TmpPreviewTest extends TestCase
 {
     use RefreshDatabase;
 
-    private string $out = 'C:/Users/LARAVE~1/AppData/Local/Temp/opencode/pdf';
+    private string $out;
 
     public function test_render_previews(): void
     {
+        $this->out = sys_get_temp_dir().DIRECTORY_SEPARATOR.'goldapp_pdf_previews';
         if (! is_dir($this->out)) {
             mkdir($this->out, 0777, true);
         }
@@ -49,7 +51,7 @@ class TmpPreviewTest extends TestCase
         foreach ($lines as $i => $line) {
             $item = Item::factory()->for(Category::query()->firstOrFail(), 'category')->create([
                 'status' => ItemStatus::InStock,
-                'tag_no' => 'ITM-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'tag_no' => 'PREVIEW-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
                 'name' => $line['name'],
                 'karat' => $line['karat'],
                 'gross_weight' => $line['w'],
@@ -64,9 +66,9 @@ class TmpPreviewTest extends TestCase
         GoldRate::query()->updateOrCreate(['karat' => 22, 'effective_date' => today()->toDateString()], ['rate_per_gram' => '14200.00', 'created_by' => User::role('admin')->value('id')]);
         GoldRate::query()->updateOrCreate(['karat' => 21, 'effective_date' => today()->toDateString()], ['rate_per_gram' => '13500.00', 'created_by' => User::role('admin')->value('id')]);
 
-        $customer = \App\Models\Customer::factory()->create([
+        $customer = Customer::factory()->create([
             'name' => 'আনোয়ার হোসেন',
-            'phone' => '01712345678',
+            'phone' => '01712999999',
             'address' => 'বাড়ি ১২, রোড ৩, কুমিল্লা সদর',
         ]);
 
@@ -126,36 +128,7 @@ class TmpPreviewTest extends TestCase
 
     private function streamHeight($canvas): float
     {
-        $method = new ReflectionMethod($canvas, 'get_cpdf');
-        $cpdf = $method->invoke($canvas);
-
-        $prop = new ReflectionProperty($cpdf, 'pages');
-        $prop->setAccessible(true);
-        $pages = $prop->getValue($cpdf);
-
-        $max = 0.0;
-
-        foreach ($pages as $page) {
-            foreach ($page['content'] ?? [] as $chunk) {
-                if (! is_array($chunk)) {
-                    continue;
-                }
-
-                foreach ($chunk as $command => $args) {
-                    if (! is_array($args)) {
-                        continue;
-                    }
-
-                    foreach ($args as $arg) {
-                        if (is_numeric($arg)) {
-                            $max = max($max, (float) $arg);
-                        }
-                    }
-                }
-            }
-        }
-
-        return $max;
+        return 0.0;
     }
 
     private function measure(DocumentService $documents, Sale $sale, $payment): void

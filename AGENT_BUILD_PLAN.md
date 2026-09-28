@@ -300,7 +300,7 @@ Commit: `feat: admin, audit log, backup and hardening`
 - [x] Step 3: Customers
 - [x] Step 4: Gold inventory
 - [x] Step 5: Sale entry
-- [ ] Step 6: Invoice printing
+- [x] Step 6: Invoice printing
 - [ ] Step 7: Pawn account
 - [ ] Step 8: Pawn printing
 - [ ] Step 9: Suppliers and purchases

@@ -374,6 +374,33 @@ function validate() {
     return Object.keys(fieldErrors).length === 0
 }
 
+const savedSale = ref(null)
+const successDialog = ref(false)
+
+function openPdf(id, size = 'a4', download = false) {
+    const query = new URLSearchParams()
+    if (size) {
+        query.set('size', size)
+    }
+    if (download) {
+        query.set('download', '1')
+    }
+    window.open(`/sales/${id}/invoice?${query.toString()}`, '_blank')
+}
+
+function goToSaleProfile() {
+    if (savedSale.value?.id) {
+        router.push({ name: 'sale-profile', params: { id: savedSale.value.id } })
+    }
+    successDialog.value = false
+}
+
+function startNewSale() {
+    successDialog.value = false
+    savedSale.value = null
+    reset()
+}
+
 async function submit() {
     errorMessage.value = ''
 
@@ -383,7 +410,8 @@ async function submit() {
 
     try {
         const sale = await salesStore.saveSale(buildPayload())
-        router.push({ name: 'sale-profile', params: { id: sale.id } })
+        savedSale.value = sale
+        successDialog.value = true
     } catch (error) {
         errorMessage.value = error.response?.data?.message ?? salesStore.error ?? localeStore.t('sales.saveFailed')
         setValidationErrors(error.response?.data?.errors ?? {})
@@ -904,6 +932,64 @@ onMounted(load)
                     <v-btn variant="text" @click="manualDialog = false">{{ $t('common.cancel') }}</v-btn>
                     <v-btn color="primary" @click="saveManualLine">
                         {{ manualEditingIndex === null ? $t('common.add') : $t('common.save') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="successDialog" max-width="500" persistent>
+            <v-card v-if="savedSale">
+                <v-card-item class="bg-success text-white py-4">
+                    <template #prepend>
+                        <v-icon icon="mdi-check-circle" size="36" />
+                    </template>
+                    <v-card-title class="text-h6 font-weight-bold">
+                        {{ $t('sales.saleSavedTitle') }}
+                    </v-card-title>
+                    <v-card-subtitle class="text-white opacity-90">
+                        {{ $t('sales.saleSavedMessage', { invoice: savedSale.invoice_no }) }}
+                    </v-card-subtitle>
+                </v-card-item>
+
+                <v-card-text class="pt-6">
+                    <div class="text-subtitle-2 mb-3 text-medium-emphasis">
+                        {{ $t('sales.printInvoice') }}
+                    </div>
+                    <div class="d-flex flex-column ga-2 mb-4">
+                        <v-btn
+                            color="primary"
+                            variant="flat"
+                            prepend-icon="mdi-file-document-outline"
+                            @click="openPdf(savedSale.id, 'a4')"
+                        >
+                            {{ $t('sales.printA4') }}
+                        </v-btn>
+                        <v-btn
+                            color="secondary"
+                            variant="tonal"
+                            prepend-icon="mdi-receipt-text-outline"
+                            @click="openPdf(savedSale.id, 'thermal')"
+                        >
+                            {{ $t('sales.printThermal') }}
+                        </v-btn>
+                        <v-btn
+                            variant="outlined"
+                            prepend-icon="mdi-download"
+                            @click="openPdf(savedSale.id, 'a4', true)"
+                        >
+                            {{ $t('sales.downloadPdf') }}
+                        </v-btn>
+                    </div>
+                </v-card-text>
+
+                <v-divider />
+
+                <v-card-actions class="px-4 py-3 justify-space-between">
+                    <v-btn variant="text" @click="startNewSale">
+                        {{ $t('sales.newSale') }}
+                    </v-btn>
+                    <v-btn color="primary" variant="text" @click="goToSaleProfile">
+                        {{ $t('sales.viewSale') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>

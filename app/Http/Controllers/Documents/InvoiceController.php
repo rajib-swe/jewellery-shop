@@ -7,7 +7,6 @@ use App\Http\Requests\DocumentSizeRequest;
 use App\Models\Sale;
 use App\Services\DocumentService;
 use App\Services\SaleService;
-use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class InvoiceController extends Controller

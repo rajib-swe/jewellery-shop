@@ -135,7 +135,7 @@ class SaleService
                 );
                 $weightGrams = $item === null ? (float) $line['weight'] : (float) $item->net_weight;
                 $makingType = $item === null ? MakingType::from($line['making_type'] ?? 'fixed') : $item->making_type;
-                $makingValue = $item === null ? (float) $line['making_value'] : (float) $item->making_value;
+                $makingValue = $item === null ? (float) ($line['making_value'] ?? $line['making'] ?? 0) : (float) $item->making_value;
                 $stonePriceGrams = $item === null ? (float) ($line['stone_price'] ?? 0) : (float) $item->stone_price;
                 $goldValueCents = $this->toCents($weightGrams * $rate);
                 $makingCents = $this->toCents(

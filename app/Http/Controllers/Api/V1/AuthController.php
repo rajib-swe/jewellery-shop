@@ -26,7 +26,9 @@ class AuthController extends Controller
             ]);
         }
 
-        $request->session()->regenerate();
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
 
         $user = $request->user()->loadMissing(['roles', 'roles.permissions', 'permissions']);
 

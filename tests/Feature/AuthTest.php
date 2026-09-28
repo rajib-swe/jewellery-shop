@@ -104,6 +104,34 @@ class AuthTest extends TestCase
         ]);
     }
 
+    public function test_user_can_log_in_without_session_store_present(): void
+    {
+        $user = $this->createUserWithAccessPermission();
+
+        // Making API login call without stateful referer header (no session store attached)
+        $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertOk()
+            ->assertJsonPath('data.email', $user->email);
+    }
+
+    public function test_user_can_log_in_via_custom_request_host(): void
+    {
+        $user = $this->createUserWithAccessPermission();
+
+        $this->withHeaders([
+            'Host' => 'goldapp.test:8080',
+            'Referer' => 'http://goldapp.test:8080/login',
+        ])->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertOk()
+            ->assertJsonPath('data.email', $user->email);
+
+        $this->assertAuthenticatedAs($user);
+    }
+
     private function createUserWithAccessPermission(): User
     {
         $permission = Permission::create([

@@ -91,7 +91,7 @@ class DocumentService
                 'customer_code' => $sale->customer?->code ?? '',
                 'customer_address' => $sale->customer?->address ?? '',
                 'seller_name' => $sale->user?->name ?? '',
-                'is_void' => $sale->status === \App\SaleStatus::Void,
+                'is_void' => $sale->status === SaleStatus::Void,
                 'void_reason' => $sale->void_reason,
                 'notes' => $sale->notes,
             ],
@@ -170,7 +170,7 @@ class DocumentService
                 'total' => (string) $sale->total,
                 'paid' => (string) $sale->paid,
                 'due' => (string) $sale->due,
-                'is_void' => $sale->status === \App\SaleStatus::Void,
+                'is_void' => $sale->status === SaleStatus::Void,
             ],
             'customer' => [
                 'name' => $sale->customer?->name ?? $labels['walkIn']['bn'],
