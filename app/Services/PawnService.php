@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\CashSourceType;
 use App\ItemStatus;
 use App\MakingType;
 use App\Models\Category;
@@ -27,6 +28,7 @@ class PawnService
         private readonly StockService $stock,
         private readonly SettingsService $settings,
         private readonly InvoiceNumberService $invoiceNumbers,
+        private readonly CashBookService $cashBook,
     ) {}
 
     /**
@@ -177,6 +179,20 @@ class PawnService
                     ]);
                 }
 
+                // The principal leaves the shop as cash the moment the pawn is
+                // taken, so it is booked out against the account it funds.
+                $this->cashBook->recordOut(
+                    CashSourceType::PawnDisbursement,
+                    $pawn->getKey(),
+                    (float) $pawn->principal,
+                    $user,
+                    [
+                        'date' => $pawn->date->toDateString(),
+                        'method' => 'cash',
+                        'note' => "Pawn disbursement {$pawn->pawn_no}",
+                    ],
+                );
+
                 return $this->withDetails($pawn);
             });
         } catch (Throwable $exception) {
@@ -229,7 +245,7 @@ class PawnService
             $principalShare = $amountCents - $interestShare;
 
             foreach ($this->shares($interestShare, $principalShare) as $share) {
-                $lockedPawn->payments()->create([
+                $createdPayment = $lockedPawn->payments()->create([
                     ...$share,
                     'date' => $date->toDateString(),
                     'method' => $data['method'] ?? 'cash',
@@ -237,6 +253,19 @@ class PawnService
                     'note' => $data['note'] ?? null,
                     'user_id' => $user->getKey(),
                 ]);
+
+                $this->cashBook->recordIn(
+                    CashSourceType::PawnPayment,
+                    $createdPayment->getKey(),
+                    (float) $createdPayment->amount,
+                    $user,
+                    [
+                        'date' => $createdPayment->date->toDateString(),
+                        'method' => $createdPayment->method->value,
+                        'reference' => $createdPayment->reference,
+                        'note' => "Pawn {$lockedPawn->pawn_no} collection",
+                    ],
+                );
             }
 
             return $this->withDetails($lockedPawn);
@@ -278,7 +307,7 @@ class PawnService
                 ]);
             }
 
-            $lockedPawn->payments()->create([
+            $redeemPayment = $lockedPawn->payments()->create([
                 'type' => PawnPaymentType::Redeem,
                 'amount' => $this->fromCents($amountCents),
                 'date' => $date->toDateString(),
@@ -287,6 +316,19 @@ class PawnService
                 'note' => $data['note'] ?? null,
                 'user_id' => $user->getKey(),
             ]);
+
+            $this->cashBook->recordIn(
+                CashSourceType::PawnPayment,
+                $redeemPayment->getKey(),
+                (float) $redeemPayment->amount,
+                $user,
+                [
+                    'date' => $redeemPayment->date->toDateString(),
+                    'method' => $redeemPayment->method->value,
+                    'reference' => $redeemPayment->reference,
+                    'note' => "Pawn {$lockedPawn->pawn_no} redemption",
+                ],
+            );
 
             $lockedPawn->update([
                 'status' => PawnStatus::Redeemed,
@@ -322,7 +364,7 @@ class PawnService
             $interestDueCents = $this->toCents($summary['interest_due']);
 
             if ($interestDueCents > 0) {
-                $lockedPawn->payments()->create([
+                $renewalPayment = $lockedPawn->payments()->create([
                     'type' => PawnPaymentType::Interest,
                     'amount' => $this->fromCents($interestDueCents),
                     'date' => $date->toDateString(),
@@ -330,6 +372,18 @@ class PawnService
                     'note' => 'Interest settled on renewal',
                     'user_id' => $user->getKey(),
                 ]);
+
+                $this->cashBook->recordIn(
+                    CashSourceType::PawnPayment,
+                    $renewalPayment->getKey(),
+                    (float) $renewalPayment->amount,
+                    $user,
+                    [
+                        'date' => $renewalPayment->date->toDateString(),
+                        'method' => 'cash',
+                        'note' => "Pawn {$lockedPawn->pawn_no} interest on renewal",
+                    ],
+                );
             }
 
             $termDays = max(1, (int) ($data['term_days'] ?? $this->settings->all()['pawn_term_days']));

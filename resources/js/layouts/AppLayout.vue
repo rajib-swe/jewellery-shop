@@ -100,6 +100,24 @@ const navigation = computed(() => [
         permission: 'view inventory',
     },
     {
+        title: localeStore.t('nav.cashBook'),
+        icon: 'mdi-book-open-page-variant-outline',
+        to: { name: 'cash-book' },
+        permission: 'view accounts',
+    },
+    {
+        title: localeStore.t('nav.expenses'),
+        icon: 'mdi-cash-minus',
+        to: { name: 'expenses' },
+        permission: 'view accounts',
+    },
+    {
+        title: localeStore.t('nav.dailyClosing'),
+        icon: 'mdi-lock-check-outline',
+        to: { name: 'daily-closing' },
+        permission: 'view accounts',
+    },
+    {
         title: localeStore.t('nav.settings'),
         icon: 'mdi-cog-outline',
         to: { name: 'settings' },

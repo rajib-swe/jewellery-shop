@@ -331,7 +331,7 @@ Commit: `feat: admin, audit log, backup and hardening`
 - [x] Step 7: Pawn account
 - [x] Step 8: Pawn printing
 - [x] Step 9: Suppliers and purchases
-- [ ] Step 10: Accounts and cash book
+- [x] Step 10: Accounts and cash book
 - [ ] Step 11: Reports and dashboard
 - [ ] Step 12: Admin, audit, backup, hardening
 
@@ -358,5 +358,6 @@ Which option each step was built under, so later steps know what is and is not c
 | 7 | skip | write |
 | 8 | skip | write |
 | 9 | write | write |
+| 10 | write | write |
 
 

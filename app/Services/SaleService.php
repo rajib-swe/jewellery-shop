@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\CashSourceType;
 use App\ItemStatus;
 use App\MakingType;
 use App\Models\Item;
@@ -24,6 +25,7 @@ class SaleService
         private readonly StockService $stock,
         private readonly SettingsService $settings,
         private readonly GoldRateService $goldRates,
+        private readonly CashBookService $cashBook,
     ) {}
 
     /**
@@ -251,12 +253,25 @@ class SaleService
             }
 
             foreach ($payments as $payment) {
-                $sale->payments()->create([
+                $createdPayment = $sale->payments()->create([
                     'method' => $payment['method'],
                     'amount' => $this->fromCents($this->toCents((float) $payment['amount'])),
                     'reference' => $payment['reference'] ?? null,
                     'user_id' => $user->getKey(),
                 ]);
+
+                $this->cashBook->recordIn(
+                    CashSourceType::SalePayment,
+                    $createdPayment->getKey(),
+                    (float) $createdPayment->amount,
+                    $user,
+                    [
+                        'date' => $date->toDateString(),
+                        'method' => $createdPayment->method->value,
+                        'reference' => $createdPayment->reference,
+                        'note' => "Sale {$sale->invoice_no}",
+                    ],
+                );
             }
 
             $sale->update([
@@ -302,12 +317,24 @@ class SaleService
                 ]);
             }
 
-            $lockedSale->payments()->create([
+            $createdPayment = $lockedSale->payments()->create([
                 'method' => $data['method'],
                 'amount' => $this->fromCents($amountCents),
                 'reference' => $data['reference'] ?? null,
                 'user_id' => $user->getKey(),
             ]);
+
+            $this->cashBook->recordIn(
+                CashSourceType::SalePayment,
+                $createdPayment->getKey(),
+                (float) $createdPayment->amount,
+                $user,
+                [
+                    'method' => $createdPayment->method->value,
+                    'reference' => $createdPayment->reference,
+                    'note' => "Due payment for sale {$lockedSale->invoice_no}",
+                ],
+            );
 
             $paidCents = $this->toCents((float) $lockedSale->paid) + $amountCents;
             $totalCents = $this->toCents((float) $lockedSale->total);
@@ -367,6 +394,12 @@ class SaleService
                 }
 
                 $this->stock->delete($scrapItem);
+            }
+
+            // The money the customer handed over goes back out of the drawer, so
+            // every ledger row written for those payments is reversed with them.
+            foreach ($lockedSale->payments as $payment) {
+                $this->cashBook->forgetSource(CashSourceType::SalePayment, $payment->getKey());
             }
 
             $lockedSale->payments()->delete();

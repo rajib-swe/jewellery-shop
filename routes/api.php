@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CashBookController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\DailyClosingController;
+use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\GoldRateController;
 use App\Http\Controllers\Api\V1\ItemController;
 use App\Http\Controllers\Api\V1\PawnController;
@@ -180,5 +183,44 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/purchases/{purchase}', [PurchaseController::class, 'show'])
             ->middleware('permission:view purchases')
             ->name('api.v1.purchases.show');
+
+        Route::get('/expenses', [ExpenseController::class, 'index'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.expenses.index');
+        Route::post('/expenses', [ExpenseController::class, 'store'])
+            ->middleware('permission:manage accounts')
+            ->name('api.v1.expenses.store');
+        Route::get('/expenses/{expense}', [ExpenseController::class, 'show'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.expenses.show');
+        Route::match(['put', 'patch'], '/expenses/{expense}', [ExpenseController::class, 'update'])
+            ->middleware('permission:manage accounts')
+            ->name('api.v1.expenses.update');
+        Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])
+            ->middleware('permission:manage accounts')
+            ->name('api.v1.expenses.destroy');
+
+        Route::get('/cash-book', [CashBookController::class, 'index'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.cash-book.index');
+        Route::get('/cash-book/summary', [CashBookController::class, 'summary'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.cash-book.summary');
+        Route::post('/cash-book', [CashBookController::class, 'store'])
+            ->middleware('permission:manage accounts')
+            ->name('api.v1.cash-book.store');
+
+        Route::get('/daily-closings', [DailyClosingController::class, 'index'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.daily-closings.index');
+        Route::get('/daily-closings/show', [DailyClosingController::class, 'show'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.daily-closings.show');
+        Route::post('/daily-closings', [DailyClosingController::class, 'store'])
+            ->middleware('permission:close accounts')
+            ->name('api.v1.daily-closings.store');
+        Route::post('/daily-closings/{closing}/reopen', [DailyClosingController::class, 'reopen'])
+            ->middleware('permission:close accounts')
+            ->name('api.v1.daily-closings.reopen');
     });
 });

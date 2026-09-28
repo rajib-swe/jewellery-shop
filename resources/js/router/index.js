@@ -3,6 +3,9 @@ import AppLayout from '../layouts/AppLayout.vue'
 import AccessDenied from '../pages/AccessDenied.vue'
 import Dashboard from '../pages/Dashboard.vue'
 import GoldRates from '../pages/gold-rates/GoldRates.vue'
+import CashBook from '../pages/accounts/CashBook.vue'
+import DailyClosingPage from '../pages/accounts/DailyClosingPage.vue'
+import Expenses from '../pages/accounts/Expenses.vue'
 import Categories from '../pages/inventory/Categories.vue'
 import ItemForm from '../pages/inventory/ItemForm.vue'
 import ItemLabels from '../pages/inventory/ItemLabels.vue'
@@ -207,6 +210,24 @@ const router = createRouter({
                     name: 'settings',
                     component: Settings,
                     meta: { permission: 'view settings' },
+                },
+                {
+                    path: 'accounts/expenses',
+                    name: 'expenses',
+                    component: Expenses,
+                    meta: { permission: 'view accounts' },
+                },
+                {
+                    path: 'accounts/cash-book',
+                    name: 'cash-book',
+                    component: CashBook,
+                    meta: { permission: 'view accounts' },
+                },
+                {
+                    path: 'accounts/daily-closing',
+                    name: 'daily-closing',
+                    component: DailyClosingPage,
+                    meta: { permission: 'view accounts' },
                 },
             ],
         },
