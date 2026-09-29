@@ -6,7 +6,10 @@ import 'vuetify/styles'
 import App from './App.vue'
 import CustomerPicker from './components/CustomerPicker.vue'
 import router from './router'
+import { setUnauthorizedHandler } from './api/client'
+import { useAuthStore } from './stores/auth'
 import { useLocaleStore } from './stores/locale'
+import { usePwaStore } from './stores/pwa'
 
 const vuetify = createVuetify({
     icons: {
@@ -44,5 +47,23 @@ app.use(router)
 const localeStore = useLocaleStore(pinia)
 
 app.config.globalProperties.$t = localeStore.t
+
+const pwaStore = usePwaStore(pinia)
+
+pwaStore.initialise()
+
+setUnauthorizedHandler(() => {
+    const authStore = useAuthStore(pinia)
+
+    if (!authStore.isAuthenticated) {
+        return
+    }
+
+    authStore.clearSession({ expired: true })
+
+    if (router.currentRoute.value.name !== 'login') {
+        router.push({ name: 'login' })
+    }
+})
 
 app.mount('#app')

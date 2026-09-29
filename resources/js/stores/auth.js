@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
     const initialized = ref(false)
     const loading = ref(false)
     const submitting = ref(false)
+    const sessionExpired = ref(false)
 
     const isAuthenticated = computed(() => user.value !== null)
     const roles = computed(() => user.value?.roles ?? [])
@@ -58,8 +59,13 @@ export const useAuthStore = defineStore('auth', () => {
     async function logout() {
         await logoutCurrentUser()
 
+        clearSession()
+    }
+
+    function clearSession({ expired = false } = {}) {
         user.value = null
         initialized.value = true
+        sessionExpired.value = expired
     }
 
     return {
@@ -67,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
         initialized,
         loading,
         submitting,
+        sessionExpired,
         isAuthenticated,
         roles,
         primaryRole,
@@ -74,5 +81,6 @@ export const useAuthStore = defineStore('auth', () => {
         fetchUser,
         login,
         logout,
+        clearSession,
     }
 })
