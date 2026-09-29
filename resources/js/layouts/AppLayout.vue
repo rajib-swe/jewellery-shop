@@ -94,7 +94,7 @@ const navigation = computed(() => [
     {
         id: 'suppliers',
         title: localeStore.t('nav.suppliers'),
-        icon: 'mdi-store-account-outline',
+        icon: 'mdi-store-outline',
         to: { name: 'suppliers' },
         permission: 'view suppliers',
     },

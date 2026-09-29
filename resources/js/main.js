@@ -1,7 +1,7 @@
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { createVuetify } from 'vuetify'
-import '@mdi/font/css/materialdesignicons.css'
+import '../css/mdi-icons.css'
 import 'vuetify/styles'
 import App from './App.vue'
 import CustomerPicker from './components/CustomerPicker.vue'

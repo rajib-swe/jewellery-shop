@@ -143,7 +143,7 @@ onMounted(() => {
                                     density="comfortable"
                                     :items="supplierItems"
                                     :label="$t('purchases.selectSupplier')"
-                                    prepend-inner-icon="mdi-store-account-outline"
+                                    prepend-inner-icon="mdi-store-outline"
                                     variant="outlined"
                                 />
                             </v-col>

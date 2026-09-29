@@ -11,7 +11,7 @@
     <meta name="color-scheme" content="light">
     <meta name="format-detection" content="telephone=no">
 
-    <link rel="manifest" href="/build/manifest.webmanifest">
+    <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/icons/favicon.ico" sizes="48x48">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 

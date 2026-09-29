@@ -1,4 +1,6 @@
 import { fileURLToPath, URL } from 'node:url';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
@@ -6,6 +8,57 @@ import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
 import { VitePWA } from 'vite-plugin-pwa';
+
+const ICON_PATTERN = /mdi-[a-z0-9]+(?:-[a-z0-9]+)*/g;
+
+function collectSourceFiles(dir) {
+    return readdirSync(dir).flatMap((entry) => {
+        const full = join(dir, entry);
+
+        if (statSync(full).isDirectory()) {
+            return collectSourceFiles(full);
+        }
+
+        return /\.(vue|js)$/.test(entry) ? [full] : [];
+    });
+}
+
+/**
+ * resources/css/mdi-icons.css is a committed subset of the Material Design Icons
+ * font. Without this check a newly added icon would silently render blank, since
+ * the glyph is simply not in the subset.
+ */
+function mdiSubsetGuard() {
+    return {
+        name: 'mdi-subset-guard',
+        buildStart() {
+            const sourceDir = fileURLToPath(new URL('./resources/js', import.meta.url));
+            const subsetFile = fileURLToPath(new URL('./resources/css/mdi-icons.css', import.meta.url));
+
+            const used = new Set();
+            for (const file of collectSourceFiles(sourceDir)) {
+                // Drop import lines first: a path such as "../css/mdi-icons.css"
+                // would otherwise read as an icon named "mdi-icons".
+                const source = readFileSync(file, 'utf8').replace(/^import\s[^\n]*$/gm, '');
+
+                for (const match of source.matchAll(ICON_PATTERN)) {
+                    used.add(match[0]);
+                }
+            }
+
+            const subset = readFileSync(subsetFile, 'utf8');
+            const missing = [...used].filter((icon) => !subset.includes(`.${icon}::before`));
+
+            if (missing.length > 0) {
+                throw new Error(
+                    `These icons are not in resources/css/mdi-icons.css and would render blank:\n`
+                    + missing.map((icon) => `  ${icon}`).join('\n')
+                    + '\nRun "npm run icons:subset" and commit the result.',
+                );
+            }
+        },
+    };
+}
 
 export default defineConfig({
     plugins: [
@@ -21,54 +74,39 @@ export default defineConfig({
         tailwindcss(),
         vue(),
         vuetify({ autoImport: true }),
+        mdiSubsetGuard(),
         VitePWA({
             // "prompt" keeps the running version alive until the user accepts an
             // update, so a mid-sale form is never reloaded from under them.
             registerType: 'prompt',
             injectRegister: null,
-            // Never name this manifest.json: Laravel's @vite directive reads
-            // public/build/manifest.json and a collision breaks asset resolution.
-            manifestFilename: 'manifest.webmanifest',
             // The service worker must sit at the web root to claim scope "/".
             // Emitting into public/build would cap its scope at /build/ and it
             // would never see a single /app/** navigation.
             outDir: 'public',
             buildBase: '/',
             scope: '/',
-            // laravel-vite-plugin sets Vite publicDir to false, so includeAssets
-            // globs against the project root and emits dead /public/** URLs that
-            // fail the whole precache install. Manifest icons are absolute and get
-            // fetched by the browser directly, so they need no precache entry.
+            // The manifest is a hand written file at public/manifest.webmanifest
+            // rather than a generated one. Passing a `manifest` option makes
+            // vite-plugin-pwa register a web-root copy as a precache entry that it
+            // never writes, and a single 404 there fails the whole atomic precache
+            // install, which silently leaves the service worker inactive.
+            // Note the plugin still drops an unused placeholder at
+            // public/build/manifest.webmanifest; it is unreferenced and precache-excluded.
             includeAssets: [],
             includeManifestIcons: false,
-            manifest: {
-                id: '/',
-                name: 'Jewellery Shop Operations',
-                short_name: 'Jewellery',
-                description: 'Gold rates, inventory, sales, pawns, and purchases for your shop.',
-                lang: 'bn',
-                dir: 'ltr',
-                start_url: '/',
-                scope: '/',
-                display: 'standalone',
-                display_override: ['standalone', 'minimal-ui'],
-                orientation: 'portrait',
-                background_color: '#f8f5ef',
-                theme_color: '#8a6a32',
-                categories: ['business', 'finance', 'productivity'],
-                icons: [
-                    { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-                    { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-                    { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-                    { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-                ],
-            },
+            pwaAssets: { disabled: true },
             workbox: {
                 // Laravel serves the SPA shell, so there is no index.html to fall back to.
                 navigateFallback: null,
                 globPatterns: ['**/*.{js,css,woff2,svg,png,ico,webmanifest}'],
                 globIgnores: [
                     '**/manifest.json',
+                    // vite-plugin-pwa also registers a web-root copy of the
+                    // manifest that it never writes, and one 404 fails the whole
+                    // precache install. The browser fetches the manifest through
+                    // its <link rel="manifest"> tag, so it needs no precache entry.
+                    '**/manifest.webmanifest',
                     '**/*.map',
                     // Legacy icon-font formats: 2.6 MB that no PWA browser requests.
                     '**/*.woff',
@@ -99,6 +137,18 @@ export default defineConfig({
                             networkTimeoutSeconds: 3,
                             cacheableResponse: { statuses: [200] },
                             expiration: { maxEntries: 12, maxAgeSeconds: 60 * 60 * 24 },
+                        },
+                    },
+                    {
+                        // Safety net for hashed assets the precache does not know
+                        // about, which happens between a deploy and the user
+                        // accepting the update prompt.
+                        urlPattern: ({ url }) => url.pathname.startsWith('/build/assets/'),
+                        handler: 'StaleWhileRevalidate',
+                        options: {
+                            cacheName: 'app-assets',
+                            cacheableResponse: { statuses: [0, 200] },
+                            expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
                         },
                     },
                     {

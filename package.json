@@ -5,6 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "icons:subset": "node resources/scripts/subset-mdi-icons.mjs",
         "test": "node --test resources/js/utils/weight.test.js"
     },
     "devDependencies": {
