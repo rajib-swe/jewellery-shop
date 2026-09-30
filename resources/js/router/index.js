@@ -7,6 +7,10 @@ import { useAuthStore } from '../stores/auth'
 
 // Only the public entry points and the layout are eager. Every screen behind the
 // login loads on demand, so signing in does not download the whole back office.
+const ActivityLog = () => import('../pages/admin/ActivityLog.vue')
+const Backups = () => import('../pages/admin/Backups.vue')
+const Roles = () => import('../pages/admin/Roles.vue')
+const Users = () => import('../pages/admin/Users.vue')
 const Dashboard = () => import('../pages/Dashboard.vue')
 const GoldRates = () => import('../pages/gold-rates/GoldRates.vue')
 const CashBook = () => import('../pages/accounts/CashBook.vue')
@@ -294,6 +298,30 @@ const router = createRouter({
                     name: 'report-supplier-ledger',
                     component: SupplierLedgerReport,
                     meta: { permission: 'view reports' },
+                },
+                {
+                    path: 'admin/users',
+                    name: 'admin-users',
+                    component: Users,
+                    meta: { permission: 'view users' },
+                },
+                {
+                    path: 'admin/roles',
+                    name: 'admin-roles',
+                    component: Roles,
+                    meta: { permission: 'view roles' },
+                },
+                {
+                    path: 'admin/activity-log',
+                    name: 'admin-activity-log',
+                    component: ActivityLog,
+                    meta: { permission: 'view activity log' },
+                },
+                {
+                    path: 'admin/backups',
+                    name: 'admin-backups',
+                    component: Backups,
+                    meta: { permission: 'manage backups' },
                 },
             ],
         },

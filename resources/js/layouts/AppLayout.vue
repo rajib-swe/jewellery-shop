@@ -161,6 +161,34 @@ const navigation = computed(() => [
         to: { name: 'settings' },
         permission: 'view settings',
     },
+    {
+        id: 'admin-users',
+        title: localeStore.t('nav.users'),
+        icon: 'mdi-account-cog-outline',
+        to: { name: 'admin-users' },
+        permission: 'view users',
+    },
+    {
+        id: 'admin-roles',
+        title: localeStore.t('nav.roles'),
+        icon: 'mdi-shield-account-outline',
+        to: { name: 'admin-roles' },
+        permission: 'view roles',
+    },
+    {
+        id: 'admin-activity-log',
+        title: localeStore.t('nav.activityLog'),
+        icon: 'mdi-history',
+        to: { name: 'admin-activity-log' },
+        permission: 'view activity log',
+    },
+    {
+        id: 'admin-backups',
+        title: localeStore.t('nav.backups'),
+        icon: 'mdi-database-outline',
+        to: { name: 'admin-backups' },
+        permission: 'manage backups',
+    },
 ])
 
 const visibleNavigation = computed(() => navigation.value.filter(

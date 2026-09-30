@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\V1\ActivityLogController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BackupController;
 use App\Http\Controllers\Api\V1\CashBookController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
@@ -12,22 +14,24 @@ use App\Http\Controllers\Api\V1\PawnController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ReportExportController;
+use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\StockController;
 use App\Http\Controllers\Api\V1\SupplierController;
+use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:login')
         ->name('api.v1.login');
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.v1.logout');
     });
 
-    Route::middleware(['auth:sanctum', 'permission:access api'])->group(function (): void {
+    Route::middleware(['auth:sanctum', 'permission:access api', 'throttle:api'])->group(function (): void {
         Route::get('/me', [AuthController::class, 'me'])->name('api.v1.me');
 
         Route::get('/settings', [SettingsController::class, 'show'])
@@ -259,5 +263,54 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/daily-closings/{closing}/reopen', [DailyClosingController::class, 'reopen'])
             ->middleware('permission:close accounts')
             ->name('api.v1.daily-closings.reopen');
+
+        Route::get('/users', [UserController::class, 'index'])
+            ->middleware('permission:view users')
+            ->name('api.v1.users.index');
+        Route::post('/users', [UserController::class, 'store'])
+            ->middleware('permission:manage users')
+            ->name('api.v1.users.store');
+        Route::get('/users/{user}', [UserController::class, 'show'])
+            ->middleware('permission:view users')
+            ->name('api.v1.users.show');
+        Route::match(['put', 'patch'], '/users/{user}', [UserController::class, 'update'])
+            ->middleware('permission:manage users')
+            ->name('api.v1.users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])
+            ->middleware('permission:manage users')
+            ->name('api.v1.users.destroy');
+
+        Route::get('/roles', [RoleController::class, 'index'])
+            ->middleware('permission:view roles')
+            ->name('api.v1.roles.index');
+        Route::get('/permissions', [RoleController::class, 'permissions'])
+            ->middleware('permission:view roles')
+            ->name('api.v1.permissions.index');
+        Route::put('/roles/{role}', [RoleController::class, 'update'])
+            ->middleware('permission:manage roles')
+            ->name('api.v1.roles.update');
+
+        Route::get('/activity-log', [ActivityLogController::class, 'index'])
+            ->middleware('permission:view activity log')
+            ->name('api.v1.activity-log.index');
+        Route::get('/activity-log/filters', [ActivityLogController::class, 'filters'])
+            ->middleware('permission:view activity log')
+            ->name('api.v1.activity-log.filters');
+
+        Route::get('/backups', [BackupController::class, 'index'])
+            ->middleware('permission:manage backups')
+            ->name('api.v1.backups.index');
+        Route::post('/backups', [BackupController::class, 'store'])
+            ->middleware(['permission:manage backups', 'throttle:backups'])
+            ->name('api.v1.backups.store');
+        Route::get('/backups/{name}/download', [BackupController::class, 'download'])
+            ->middleware('permission:manage backups')
+            ->name('api.v1.backups.download')
+            // The filename ends in .sql.gz, so the parameter has to be allowed
+            // to span a dot.
+            ->where('name', '[A-Za-z0-9_\-.]+');
+        Route::delete('/backups/{name}', [BackupController::class, 'destroy'])
+            ->middleware('permission:manage backups')
+            ->name('api.v1.backups.destroy');
     });
 });

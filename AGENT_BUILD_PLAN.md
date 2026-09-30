@@ -333,7 +333,7 @@ Commit: `feat: admin, audit log, backup and hardening`
 - [x] Step 9: Suppliers and purchases
 - [x] Step 10: Accounts and cash book
 - [x] Step 11: Reports and dashboard
-- [ ] Step 12: Admin, audit, backup, hardening
+- [x] Step 12: Admin, audit, backup, hardening
 
 ---
 
@@ -360,5 +360,6 @@ Which option each step was built under, so later steps know what is and is not c
 | 9 | write | write |
 | 10 | write | write |
 | 11 | write | write |
+| 12 | skip | write |
 
 

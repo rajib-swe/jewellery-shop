@@ -8,11 +8,21 @@ use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
+    /**
+     * The key the `login` limiter counts against, shared with the limiter
+     * definition in AppServiceProvider so a successful login can clear it.
+     */
+    private function loginKey(Request $request): string
+    {
+        return 'login:'.$request->ip().'|'.$request->input('email');
+    }
+
     public function login(LoginRequest $request): UserResource
     {
         $credentials = $request->validated();
@@ -29,6 +39,10 @@ class AuthController extends Controller
         if ($request->hasSession()) {
             $request->session()->regenerate();
         }
+
+        // A successful sign-in clears the allowance, so a cashier who fumbled
+        // their password a few times is not then locked out of a clean attempt.
+        RateLimiter::clear($this->loginKey($request));
 
         $user = $request->user()->loadMissing(['roles', 'roles.permissions', 'permissions']);
 
