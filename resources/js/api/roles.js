@@ -13,7 +13,7 @@ export async function listPermissions() {
 }
 
 export async function updateRole(roleName, permissions) {
-    const { data } = await client.put(`/roles/${roleName}`, { permissions })
+    const { data } = await client.put(`/roles/${encodeURIComponent(roleName)}`, { permissions })
 
     return data.data
 }

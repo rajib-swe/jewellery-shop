@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Spatie\Activitylog\Models\Activity;
 
 /**
  * User accounts and their role assignments.
@@ -115,15 +116,32 @@ class UserService
             $this->guardLastAdministrator($user);
         }
 
-        // A user who created a sale, a rate or a closing stays on the books:
-        // those rows carry their id and must keep pointing at somebody.
-        if ($user->goldRates()->exists() || $user->hasAnyRole(['admin', 'manager'])) {
+        // A user who has signed off shop records stays on the books: sales,
+        // payments, pawns and closings all carry their id, and a deleted user
+        // would leave those rows pointing at nobody.
+        if ($user->hasAnyRole(['admin', 'manager']) || $this->hasRecordedActivity($user)) {
             throw ValidationException::withMessages([
                 'user' => 'This account has signed off shop records. Change its role instead of deleting it.',
             ]);
         }
 
         $user->delete();
+    }
+
+    /**
+     * Whether the user has ever caused an activity log entry.
+     *
+     * The audit trail is the record of who touched what, so it is the one place
+     * to ask: every model that keeps a user id logs itself, which means this
+     * catches a sale, a rate, a payment or a closing without this service
+     * having to know about each of those tables.
+     */
+    private function hasRecordedActivity(User $user): bool
+    {
+        return Activity::query()
+            ->where('causer_type', $user->getMorphClass())
+            ->where('causer_id', $user->getKey())
+            ->exists();
     }
 
     /**
