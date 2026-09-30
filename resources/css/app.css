@@ -11,6 +11,13 @@
 html {
     overflow-x: hidden;
     overflow-y: auto;
+    color-scheme: light;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    /* Kills pull-to-refresh and the grey overscroll flash once launched standalone. */
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 body {
@@ -21,11 +28,51 @@ body {
 
 #app {
     min-height: 100vh;
+    /* dvh keeps the shell inside the visible viewport when mobile browser chrome slides away. */
+    min-height: 100dvh;
     max-width: 100%;
     overflow-x: hidden;
 }
 
 .v-application {
+    min-height: 100dvh;
     max-width: 100%;
     overflow-x: hidden;
+}
+
+/* Safe areas: every inset is 0 in a normal browser tab and only becomes
+   non-zero once the app runs in its own window. */
+.v-app-bar {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+.v-bottom-navigation {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.v-navigation-drawer {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Chrome is tap-driven, so long-press selection and callouts only get in the way. */
+.v-app-bar,
+.v-bottom-navigation,
+.v-navigation-drawer,
+.v-overlay-container {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.v-main__wrap {
+    overscroll-behavior-y: contain;
+}
+
+@media print {
+    .v-app-bar,
+    .v-bottom-navigation,
+    .v-navigation-drawer {
+        display: none;
+    }
 }

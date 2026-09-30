@@ -1,44 +1,47 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AppLayout from '../layouts/AppLayout.vue'
 import AccessDenied from '../pages/AccessDenied.vue'
-import Dashboard from '../pages/Dashboard.vue'
-import GoldRates from '../pages/gold-rates/GoldRates.vue'
-import CashBook from '../pages/accounts/CashBook.vue'
-import DailyClosingPage from '../pages/accounts/DailyClosingPage.vue'
-import Expenses from '../pages/accounts/Expenses.vue'
-import Categories from '../pages/inventory/Categories.vue'
-import ItemForm from '../pages/inventory/ItemForm.vue'
-import ItemLabels from '../pages/inventory/ItemLabels.vue'
-import Items from '../pages/inventory/Items.vue'
-import StockSummary from '../pages/inventory/StockSummary.vue'
-import CustomerForm from '../pages/customers/CustomerForm.vue'
-import CustomerShow from '../pages/customers/CustomerShow.vue'
-import Customers from '../pages/customers/Customers.vue'
 import Login from '../pages/Login.vue'
 import PublicHome from '../pages/PublicHome.vue'
-import PurchaseForm from '../pages/purchases/PurchaseForm.vue'
-import PurchaseShow from '../pages/purchases/PurchaseShow.vue'
-import Purchases from '../pages/purchases/Purchases.vue'
-import SupplierForm from '../pages/suppliers/SupplierForm.vue'
-import SupplierShow from '../pages/suppliers/SupplierShow.vue'
-import Suppliers from '../pages/suppliers/Suppliers.vue'
-import PawnForm from '../pages/pawns/PawnForm.vue'
-import PawnShow from '../pages/pawns/PawnShow.vue'
-import Pawns from '../pages/pawns/Pawns.vue'
-import CustomerLedgerReport from '../pages/reports/CustomerLedgerReport.vue'
-import InterestReport from '../pages/reports/InterestReport.vue'
-import OverduePawnReport from '../pages/reports/OverduePawnReport.vue'
-import PawnReport from '../pages/reports/PawnReport.vue'
-import ProfitReport from '../pages/reports/ProfitReport.vue'
-import ReportIndex from '../pages/reports/ReportIndex.vue'
-import SalesReport from '../pages/reports/SalesReport.vue'
-import StockReport from '../pages/reports/StockReport.vue'
-import SupplierLedgerReport from '../pages/reports/SupplierLedgerReport.vue'
-import SaleEntry from '../pages/sales/SaleEntry.vue'
-import Sales from '../pages/sales/Sales.vue'
-import SaleShow from '../pages/sales/SaleShow.vue'
-import Settings from '../pages/settings/Settings.vue'
 import { useAuthStore } from '../stores/auth'
+
+// Only the public entry points and the layout are eager. Every screen behind the
+// login loads on demand, so signing in does not download the whole back office.
+const Dashboard = () => import('../pages/Dashboard.vue')
+const GoldRates = () => import('../pages/gold-rates/GoldRates.vue')
+const CashBook = () => import('../pages/accounts/CashBook.vue')
+const DailyClosingPage = () => import('../pages/accounts/DailyClosingPage.vue')
+const Expenses = () => import('../pages/accounts/Expenses.vue')
+const Categories = () => import('../pages/inventory/Categories.vue')
+const ItemForm = () => import('../pages/inventory/ItemForm.vue')
+const ItemLabels = () => import('../pages/inventory/ItemLabels.vue')
+const Items = () => import('../pages/inventory/Items.vue')
+const StockSummary = () => import('../pages/inventory/StockSummary.vue')
+const CustomerForm = () => import('../pages/customers/CustomerForm.vue')
+const CustomerShow = () => import('../pages/customers/CustomerShow.vue')
+const Customers = () => import('../pages/customers/Customers.vue')
+const PurchaseForm = () => import('../pages/purchases/PurchaseForm.vue')
+const PurchaseShow = () => import('../pages/purchases/PurchaseShow.vue')
+const Purchases = () => import('../pages/purchases/Purchases.vue')
+const SupplierForm = () => import('../pages/suppliers/SupplierForm.vue')
+const SupplierShow = () => import('../pages/suppliers/SupplierShow.vue')
+const Suppliers = () => import('../pages/suppliers/Suppliers.vue')
+const PawnForm = () => import('../pages/pawns/PawnForm.vue')
+const PawnShow = () => import('../pages/pawns/PawnShow.vue')
+const Pawns = () => import('../pages/pawns/Pawns.vue')
+const SaleEntry = () => import('../pages/sales/SaleEntry.vue')
+const Sales = () => import('../pages/sales/Sales.vue')
+const SaleShow = () => import('../pages/sales/SaleShow.vue')
+const CustomerLedgerReport = () => import('../pages/reports/CustomerLedgerReport.vue')
+const InterestReport = () => import('../pages/reports/InterestReport.vue')
+const OverduePawnReport = () => import('../pages/reports/OverduePawnReport.vue')
+const PawnReport = () => import('../pages/reports/PawnReport.vue')
+const ProfitReport = () => import('../pages/reports/ProfitReport.vue')
+const ReportIndex = () => import('../pages/reports/ReportIndex.vue')
+const SalesReport = () => import('../pages/reports/SalesReport.vue')
+const StockReport = () => import('../pages/reports/StockReport.vue')
+const SupplierLedgerReport = () => import('../pages/reports/SupplierLedgerReport.vue')
+const Settings = () => import('../pages/settings/Settings.vue')
 
 const router = createRouter({
     history: createWebHistory(),

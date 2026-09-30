@@ -59,7 +59,7 @@ const entries = computed(() => [
     {
         title: localeStore.t('reports.customerTitle'),
         description: localeStore.t('reports.customerSubtitle'),
-        icon: 'mdi-account-balance-outline',
+        icon: 'mdi-bank-outline',
         to: { name: 'report-customer-ledger' },
         permission: 'view reports',
     },
