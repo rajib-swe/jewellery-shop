@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use OpenApi\Attributes as OA;
 
+#[OA\Tag(name: 'Authentication', description: 'API Authentication endpoints')]
 class AuthController extends Controller
 {
     /**
@@ -23,6 +25,39 @@ class AuthController extends Controller
         return 'login:'.$request->ip().'|'.$request->input('email');
     }
 
+    #[OA\Post(
+        path: '/login',
+        summary: 'Login',
+        description: 'Authenticate user and return access token',
+        tags: ['Authentication'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'password'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'admin@example.com'),
+                    new OA\Property(property: 'password', type: 'string', format: 'password', example: 'password'),
+                    new OA\Property(property: 'remember', type: 'boolean', example: false),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful authentication',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'meta', type: 'object', properties: [
+                            new OA\Property(property: 'message', type: 'string', example: 'Authenticated.'),
+                        ]),
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: 'Validation error'),
+            new OA\Response(response: 429, description: 'Too many attempts'),
+        ]
+    )]
     public function login(LoginRequest $request): UserResource
     {
         $credentials = $request->validated();
@@ -53,11 +88,45 @@ class AuthController extends Controller
         ]);
     }
 
+    #[OA\Get(
+        path: '/me',
+        summary: 'Get authenticated user',
+        description: 'Return the currently authenticated user',
+        tags: ['Authentication'],
+        security: [['sanctum' => []]],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Authenticated user',
+                content: new OA\JsonContent(properties: [
+                    new OA\Property(property: 'data', type: 'object'),
+                ])
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+        ]
+    )]
     public function me(Request $request): UserResource
     {
         return UserResource::make($request->user()->loadMissing(['roles', 'permissions']));
     }
 
+    #[OA\Post(
+        path: '/logout',
+        summary: 'Logout',
+        description: 'Invalidate the current access token',
+        tags: ['Authentication'],
+        security: [['sanctum' => []]],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successfully logged out',
+                content: new OA\JsonContent(properties: [
+                    new OA\Property(property: 'message', type: 'string', example: 'Logged out.'),
+                ])
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+        ]
+    )]
     public function logout(Request $request): JsonResponse
     {
         $accessToken = $request->user()->currentAccessToken();

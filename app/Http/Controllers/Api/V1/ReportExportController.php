@@ -11,6 +11,7 @@ use App\Services\ReportService;
 use App\Support\ReportPeriod;
 use Carbon\CarbonImmutable;
 use Maatwebsite\Excel\Facades\Excel;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
@@ -24,8 +25,39 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * heading row plus rows. Deciding what a report *means* is `ReportService`'s
  * job, not this controller's.
  */
+#[OA\Tag(name: 'Reports', description: 'Business report endpoints')]
 class ReportExportController extends Controller
 {
+    #[OA\Get(
+        path: '/reports/{report}/export',
+        summary: 'Export report',
+        description: 'Download a report as an Excel file',
+        tags: ['Reports'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'report',
+                in: 'path',
+                required: true,
+                description: 'Report type',
+                schema: new OA\Schema(type: 'string', enum: ['sales', 'stock', 'pawn-outstanding', 'overdue-pawns', 'interest-earned', 'customer-ledger', 'supplier-ledger', 'profit'])
+            ),
+            new OA\Parameter(name: 'date_from', in: 'query', schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'date_to', in: 'query', schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'group_by', in: 'query', schema: new OA\Schema(type: 'string', enum: ['day', 'week', 'month'])),
+            new OA\Parameter(name: 'customer', in: 'query', schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'supplier', in: 'query', schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Excel file download',
+                content: new OA\MediaType(mediaType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 404, description: 'Unknown report'),
+        ]
+    )]
     public function __invoke(
         ReportRequest $request,
         string $report,

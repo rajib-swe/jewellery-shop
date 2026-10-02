@@ -5,7 +5,7 @@ const base = '/api/v1/reports'
 async function unwrap(request) {
     const { data } = await request
 
-    return data
+    return data.data
 }
 
 export function getDashboard() {

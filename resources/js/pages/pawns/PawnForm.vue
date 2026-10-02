@@ -283,93 +283,95 @@ onMounted(load)
                             </v-btn>
                         </v-card-title>
                         <v-card-text>
-                            <v-table density="comfortable">
-                                <thead>
-                                    <tr>
-                                        <th>{{ $t('pawns.itemDescription') }}</th>
-                                        <th style="width: 120px">{{ $t('inventory.karat') }}</th>
-                                        <th style="width: 150px">{{ $t('inventory.grossWeight') }}</th>
-                                        <th style="width: 150px">{{ $t('inventory.stoneWeight') }}</th>
-                                        <th style="width: 160px">{{ $t('pawns.estimatedValue') }}</th>
-                                        <th style="width: 190px">{{ $t('inventory.category') }}</th>
-                                        <th style="width: 60px" />
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(item, index) in form.items" :key="index">
-                                        <td>
-                                            <v-text-field
-                                                v-model="item.description"
-                                                :label="$t('pawns.itemDescription')"
-                                                density="compact"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-select
-                                                v-model="item.karat"
-                                                :items="karatOptions"
-                                                density="compact"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-text-field
-                                                v-model="item.gross_weight"
-                                                density="compact"
-                                                min="0.001"
-                                                step="0.001"
-                                                type="number"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-text-field
-                                                v-model="item.stone_weight"
-                                                density="compact"
-                                                min="0"
-                                                step="0.001"
-                                                type="number"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-text-field
-                                                v-model="item.estimated_value"
-                                                density="compact"
-                                                min="0.01"
-                                                step="0.01"
-                                                :suffix="currencySymbol"
-                                                type="number"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-select
-                                                v-model="item.category_id"
-                                                clearable
-                                                density="compact"
-                                                :items="categories"
-                                                item-title="name"
-                                                item-value="id"
-                                                :label="$t('inventory.selectCategory')"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-btn
-                                                :aria-label="$t('pawns.removeItem')"
-                                                color="error"
-                                                density="compact"
-                                                icon="mdi-delete-outline"
-                                                size="small"
-                                                variant="text"
-                                                @click="removeItem(index)"
-                                            />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </v-table>
+                            <div class="pawn-items-scroll">
+                                <v-table density="comfortable">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 260px">{{ $t('pawns.itemDescription') }}</th>
+                                            <th style="width: 120px">{{ $t('inventory.karat') }}</th>
+                                            <th style="width: 150px">{{ $t('inventory.grossWeight') }}</th>
+                                            <th style="width: 150px">{{ $t('inventory.stoneWeight') }}</th>
+                                            <th style="width: 160px">{{ $t('pawns.estimatedValue') }}</th>
+                                            <th style="width: 190px">{{ $t('inventory.category') }}</th>
+                                            <th style="width: 60px" />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(item, index) in form.items" :key="index">
+                                            <td>
+                                                <v-text-field
+                                                    v-model="item.description"
+                                                    :label="$t('pawns.itemDescription')"
+                                                    density="compact"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-select
+                                                    v-model="item.karat"
+                                                    :items="karatOptions"
+                                                    density="compact"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-text-field
+                                                    v-model="item.gross_weight"
+                                                    density="compact"
+                                                    min="0.001"
+                                                    step="0.001"
+                                                    type="number"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-text-field
+                                                    v-model="item.stone_weight"
+                                                    density="compact"
+                                                    min="0"
+                                                    step="0.001"
+                                                    type="number"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-text-field
+                                                    v-model="item.estimated_value"
+                                                    density="compact"
+                                                    min="0.01"
+                                                    step="0.01"
+                                                    :suffix="currencySymbol"
+                                                    type="number"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-select
+                                                    v-model="item.category_id"
+                                                    clearable
+                                                    density="compact"
+                                                    :items="categories"
+                                                    item-title="name"
+                                                    item-value="id"
+                                                    :label="$t('inventory.selectCategory')"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-btn
+                                                    :aria-label="$t('pawns.removeItem')"
+                                                    color="error"
+                                                    density="compact"
+                                                    icon="mdi-delete-outline"
+                                                    size="small"
+                                                    variant="text"
+                                                    @click="removeItem(index)"
+                                                />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
+                            </div>
 
                             <v-alert
                                 v-if="!form.items.length"
@@ -448,3 +450,29 @@ onMounted(load)
         </v-row>
     </v-container>
 </template>
+
+<style scoped>
+/* The pledged item grid carries seven inputs per row. `table-layout: auto` lets
+   the browser negotiate the declared column widths against each cell's
+   min-content, which collapses the description column and leaves Vuetify
+   ellipsizing the karat and weight values. A fixed layout honours the widths
+   as written, and the floor plus scroll keeps them usable on narrow screens. */
+.pawn-items-scroll {
+    overflow-x: auto;
+
+    table {
+        min-width: 1080px;
+        table-layout: fixed;
+    }
+
+    :deep(.v-field) {
+        /* Fixed layout hands each cell a hard width; without this the outlined
+           field can still be clipped rather than ellipsized. */
+        min-width: 0;
+    }
+
+    :deep(.v-field__input) {
+        min-width: 0;
+    }
+}
+</style>

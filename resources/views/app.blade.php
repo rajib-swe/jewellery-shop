@@ -23,6 +23,12 @@
     @vite(['resources/css/app.css', 'resources/js/main.js'])
 </head>
 <body>
-    <div id="app"></div>
+    <div
+        id="app"
+        @if (app()->environment('local'))
+            data-local-login-email="{{ config('app.admin.email') }}"
+            data-local-login-password="{{ config('app.admin.password') }}"
+        @endif
+    ></div>
 </body>
 </html>

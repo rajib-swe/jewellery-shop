@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useOptionLabels } from '../../constants/options'
-import { CASH_SOURCE_TYPES } from '../../constants/accounts'
 import { useAccountsStore } from '../../stores/accounts'
 import { useAuthStore } from '../../stores/auth'
 import { useLocaleStore } from '../../stores/locale'
@@ -11,7 +10,11 @@ const authStore = useAuthStore()
 const accountsStore = useAccountsStore()
 const localeStore = useLocaleStore()
 const currencySymbol = useCurrency()
-const { paymentMethodOptions: methodItems, cashDirectionOptions: directionItems } = useOptionLabels()
+const {
+    paymentMethodOptions: methodItems,
+    cashDirectionOptions: directionItems,
+    cashSourceTypeOptions: sourceItems,
+} = useOptionLabels()
 const canManage = computed(() => authStore.can('manage accounts'))
 const search = ref('')
 const sourceFilter = ref('')
@@ -50,12 +53,9 @@ const headers = computed(() => [
     { title: localeStore.t('accounts.out'), key: 'out', align: 'end' },
 ])
 const total = computed(() => accountsStore.transactionsMeta.total)
-const sourceItems = computed(() => [
+const sourceFilterItems = computed(() => [
     { title: localeStore.t('accounts.filterAll'), value: '' },
-    ...CASH_SOURCE_TYPES.map((value) => ({
-        title: localeStore.t(`options.cashSource${value.charAt(0).toUpperCase()}${value.slice(1)}`),
-        value,
-    })),
+    ...sourceItems.value,
 ])
 const methodFilterItems = computed(() => [
     { title: localeStore.t('accounts.filterAll'), value: '' },
@@ -66,12 +66,16 @@ function money(value) {
     return formatAmount(value, currencySymbol.value)
 }
 
+function titleFor(items, value) {
+    return items.value.find((item) => item.value === value)?.title ?? value
+}
+
 function methodTitle(method) {
-    return localeStore.t(`options.method${method.charAt(0).toUpperCase()}${method.slice(1)}`)
+    return titleFor(methodItems, method)
 }
 
 function sourceTitle(source) {
-    return localeStore.t(`options.cashSource${source.charAt(0).toUpperCase()}${source.slice(1)}`)
+    return titleFor(sourceItems, source)
 }
 
 function sourceColor(source) {
@@ -249,7 +253,7 @@ onMounted(() => {
                             <v-col cols="12" sm="6" md="3">
                                 <v-select
                                     v-model="sourceFilter"
-                                    :items="sourceItems"
+                                    :items="sourceFilterItems"
                                     :label="$t('accounts.source')"
                                     variant="outlined"
                                 />
