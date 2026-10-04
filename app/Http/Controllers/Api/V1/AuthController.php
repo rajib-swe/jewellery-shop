@@ -26,7 +26,9 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($request->hasSession()) {
+        $hasSession = $request->hasSession();
+
+        if ($hasSession) {
             $request->session()->regenerate();
         }
 
@@ -36,6 +38,7 @@ class AuthController extends Controller
             'meta' => [
                 'message' => 'Authenticated.',
             ],
+            'token' => $hasSession ? null : $user->createToken('mobile')->plainTextToken,
         ]);
     }
 

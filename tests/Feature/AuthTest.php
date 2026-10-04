@@ -116,6 +116,43 @@ class AuthTest extends TestCase
             ->assertJsonPath('data.email', $user->email);
     }
 
+    public function test_token_client_login_issues_a_usable_bearer_token(): void
+    {
+        $user = $this->createUserWithAccessPermission();
+
+        $token = $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertOk()
+            ->assertJsonPath('data.email', $user->email)
+            ->assertJsonPath('meta.message', 'Authenticated.')
+            ->json('token');
+
+        $this->assertNotEmpty($token);
+
+        $this->withToken($token)->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.roles.0', 'cashier');
+
+        $this->withToken($token)->postJson('/api/v1/logout')
+            ->assertOk()
+            ->assertJsonPath('message', 'Logged out.');
+    }
+
+    public function test_session_login_does_not_issue_a_token(): void
+    {
+        $this->createUserWithAccessPermission();
+
+        $this->withHeader('Referer', config('app.url'))->postJson('/api/v1/login', [
+            'email' => User::query()->value('email'),
+            'password' => 'password',
+        ])->assertOk()
+            ->assertJsonPath('token', null);
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
     public function test_user_can_log_in_via_custom_request_host(): void
     {
         $user = $this->createUserWithAccessPermission();
