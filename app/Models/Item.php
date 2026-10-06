@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\ItemStatus;
 use App\MakingType;
+use App\Support\WeightPoints;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,9 +20,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
     'category_id',
     'name',
     'karat',
-    'gross_weight',
-    'stone_weight',
-    'net_weight',
+    'gross_weight_points',
+    'stone_weight_points',
+    'net_weight_points',
     'making_type',
     'making_value',
     'stone_price',
@@ -53,6 +54,21 @@ class Item extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    public function getGrossWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['gross_weight_points'] ?? null);
+    }
+
+    public function getStoneWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['stone_weight_points'] ?? null);
+    }
+
+    public function getNetWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['net_weight_points'] ?? null);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -62,9 +78,9 @@ class Item extends Model
                 'category_id',
                 'name',
                 'karat',
-                'gross_weight',
-                'stone_weight',
-                'net_weight',
+                'gross_weight_points',
+                'stone_weight_points',
+                'net_weight_points',
                 'making_type',
                 'making_value',
                 'stone_price',
@@ -83,9 +99,9 @@ class Item extends Model
     {
         return [
             'karat' => 'integer',
-            'gross_weight' => 'decimal:3',
-            'stone_weight' => 'decimal:3',
-            'net_weight' => 'decimal:3',
+            'gross_weight_points' => 'integer',
+            'stone_weight_points' => 'integer',
+            'net_weight_points' => 'integer',
             'making_type' => MakingType::class,
             'making_value' => 'decimal:2',
             'stone_price' => 'decimal:2',

@@ -9,6 +9,7 @@ use App\Models\Item;
 use App\Models\Sale;
 use App\Models\User;
 use App\SaleStatus;
+use App\Support\WeightPoints;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -135,7 +136,11 @@ class SaleService
                     $canOverrideRate,
                     $rateCache,
                 );
-                $weightGrams = $item === null ? (float) $line['weight'] : (float) $item->net_weight;
+                $weightGrams = $item === null
+                    ? (isset($line['weight_points']) && (int) $line['weight_points'] > 0
+                        ? (float) WeightPoints::toGrams((int) $line['weight_points'])
+                        : (float) $line['weight'])
+                    : (float) $item->net_weight;
                 $makingType = $item === null ? MakingType::from($line['making_type'] ?? 'fixed') : $item->making_type;
                 $makingValue = $item === null ? (float) ($line['making_value'] ?? $line['making'] ?? 0) : (float) $item->making_value;
                 $stonePriceGrams = $item === null ? (float) ($line['stone_price'] ?? 0) : (float) $item->stone_price;
@@ -151,7 +156,9 @@ class SaleService
                     'tag_no' => $item?->tag_no ?? '',
                     'name' => $item === null ? $line['name'] : $item->name,
                     'karat' => $karat,
-                    'weight' => number_format($weightGrams, 3, '.', ''),
+                    'weight_points' => $item === null && isset($line['weight_points']) && (int) $line['weight_points'] > 0
+                        ? (int) $line['weight_points']
+                        : WeightPoints::fromGrams($weightGrams),
                     'rate' => $this->fromCents($this->toCents($rate)),
                     'gold_value' => $this->fromCents($goldValueCents),
                     'making' => $this->fromCents($makingCents),
@@ -176,7 +183,9 @@ class SaleService
                     $canOverrideRate,
                     $rateCache,
                 );
-                $weightGrams = (float) $exchange['weight'];
+                $weightGrams = isset($exchange['weight_points']) && (int) $exchange['weight_points'] > 0
+                    ? (float) WeightPoints::toGrams((int) $exchange['weight_points'])
+                    : (float) $exchange['weight'];
                 $amountCents = $this->toCents($weightGrams * $rate);
 
                 $exchangeCents += $amountCents;
@@ -189,8 +198,8 @@ class SaleService
                             'category_id' => (int) $exchange['category_id'],
                             'name' => $exchange['description'],
                             'karat' => (int) $exchange['karat'],
-                            'gross_weight' => number_format($weightGrams, 3, '.', ''),
-                            'stone_weight' => '0.000',
+                            'gross_weight' => number_format($weightGrams, 5, '.', ''),
+                            'stone_weight' => '0.00000',
                             'making_type' => MakingType::Fixed->value,
                             'making_value' => '0.00',
                         ],
@@ -207,7 +216,9 @@ class SaleService
                 $sale->exchanges()->create([
                     'description' => $exchange['description'],
                     'karat' => (int) $exchange['karat'],
-                    'weight' => number_format($weightGrams, 3, '.', ''),
+                    'weight_points' => isset($exchange['weight_points']) && (int) $exchange['weight_points'] > 0
+                        ? (int) $exchange['weight_points']
+                        : WeightPoints::fromGrams($weightGrams),
                     'rate' => $this->fromCents($this->toCents($rate)),
                     'amount' => $this->fromCents($amountCents),
                     'item_id' => $scrapItemId,

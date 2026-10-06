@@ -10,6 +10,7 @@ use App\Models\Pawn;
 use App\Models\User;
 use App\PawnPaymentType;
 use App\PawnStatus;
+use App\Support\WeightPoints;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -158,8 +159,13 @@ class PawnService
                 ]);
 
                 foreach ($items as $index => $item) {
-                    $grossWeight = (float) $item['gross_weight'];
-                    $stoneWeight = (float) ($item['stone_weight'] ?? 0);
+                    $grossWeight = isset($item['gross_weight_points']) && (int) $item['gross_weight_points'] > 0
+                        ? (float) WeightPoints::toGrams((int) $item['gross_weight_points'])
+                        : (float) $item['gross_weight'];
+                    $hasStonePoints = array_key_exists('stone_weight_points', $item) && $item['stone_weight_points'] !== null && $item['stone_weight_points'] !== '';
+                    $stoneWeight = $hasStonePoints
+                        ? (float) WeightPoints::toGrams((int) $item['stone_weight_points'])
+                        : (float) ($item['stone_weight'] ?? 0);
 
                     if ($stoneWeight < 0 || $stoneWeight > $grossWeight) {
                         throw ValidationException::withMessages([
@@ -170,9 +176,16 @@ class PawnService
                     $pawn->items()->create([
                         'description' => $item['description'],
                         'karat' => (int) $item['karat'],
-                        'gross_weight' => number_format($grossWeight, 3, '.', ''),
-                        'stone_weight' => number_format($stoneWeight, 3, '.', ''),
-                        'net_weight' => number_format($grossWeight - $stoneWeight, 3, '.', ''),
+                        'gross_weight_points' => isset($item['gross_weight_points']) && (int) $item['gross_weight_points'] > 0
+                            ? (int) $item['gross_weight_points']
+                            : WeightPoints::fromGrams($grossWeight),
+                        'stone_weight_points' => $hasStonePoints
+                            ? (int) $item['stone_weight_points']
+                            : WeightPoints::fromGrams($stoneWeight),
+                        'net_weight_points' => (isset($item['gross_weight_points']) && (int) $item['gross_weight_points'] > 0
+                            ? (int) $item['gross_weight_points']
+                            : WeightPoints::fromGrams($grossWeight))
+                            - ($hasStonePoints ? (int) $item['stone_weight_points'] : WeightPoints::fromGrams($stoneWeight)),
                         'estimated_value' => $this->fromCents($this->toCents((float) $item['estimated_value'])),
                         'photo' => $storedPhotos[$index] ?? null,
                         'category_id' => $item['category_id'] ?? null,

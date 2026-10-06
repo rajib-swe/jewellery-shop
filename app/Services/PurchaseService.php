@@ -10,6 +10,7 @@ use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\User;
+use App\Support\WeightPoints;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -160,9 +161,9 @@ class PurchaseService
                     'tag_no' => $item->tag_no,
                     'name' => $line['name'],
                     'karat' => $karat,
-                    'gross_weight' => number_format($grossWeight, 3, '.', ''),
-                    'stone_weight' => number_format($stoneWeight, 3, '.', ''),
-                    'net_weight' => number_format($netWeight, 3, '.', ''),
+                    'gross_weight_points' => WeightPoints::fromGrams($grossWeight),
+                    'stone_weight_points' => WeightPoints::fromGrams($stoneWeight),
+                    'net_weight_points' => WeightPoints::fromGrams($grossWeight) - WeightPoints::fromGrams($stoneWeight),
                     'rate' => $this->fromCents($this->toCents($rate)),
                     'making_value' => $this->fromCents($makingCents),
                     'amount' => $this->fromCents($amountCents),

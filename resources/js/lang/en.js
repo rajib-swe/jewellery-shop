@@ -268,7 +268,7 @@ export default {
         clearForm: 'Clear form',
         saveSale: 'Save sale',
         invoice: 'Invoice',
-        walkInCustomer: 'Customer (optional for walk-in sales)',
+        walkInCustomer: 'Customer name',
         saleDate: 'Sale date',
         items: 'Items',
         addItemHint: 'Scan or search a tag, barcode, or name',

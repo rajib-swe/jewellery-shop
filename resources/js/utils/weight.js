@@ -4,7 +4,37 @@ export const ROTI_PER_ANA = 6
 export const POINT_PER_ROTI = 10
 export const ANA_IN_GRAMS = VORI_IN_GRAMS / ANA_PER_VORI
 export const ROTI_IN_GRAMS = ANA_IN_GRAMS / ROTI_PER_ANA
-export const POINT_IN_GRAMS = ROTI_IN_GRAMS / POINT_PER_ROTI
+export const POINT_IN_GRAMS = 0.01215
+
+export const POINTS_PER_VORI = 960
+export const POINTS_PER_ANA = 60
+export const POINTS_PER_ROTI = 10
+
+// grams are always derived: points * 0.01215 (exact)
+export function pointsToGrams(points) {
+    return Number(points) * POINT_IN_GRAMS
+}
+
+export function pointsFromParts({ vori = 0, ana = 0, roti = 0, point = 0 } = {}) {
+    return Math.round(
+        (Number(vori) || 0) * POINTS_PER_VORI
+        + (Number(ana) || 0) * POINTS_PER_ANA
+        + (Number(roti) || 0) * POINTS_PER_ROTI
+        + (Number(point) || 0),
+    )
+}
+
+export function pointsToParts(points) {
+    let rest = Math.max(0, Math.round(Number(points) || 0))
+    const vori = Math.floor(rest / POINTS_PER_VORI)
+    rest %= POINTS_PER_VORI
+    const ana = Math.floor(rest / POINTS_PER_ANA)
+    rest %= POINTS_PER_ANA
+    const roti = Math.floor(rest / POINTS_PER_ROTI)
+    const point = rest % POINTS_PER_ROTI
+
+    return { vori, ana, roti, point }
+}
 
 const PRECISION = 12
 

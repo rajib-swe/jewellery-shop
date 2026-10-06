@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\Purchase;
-use App\Models\PurchaseItem;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
+use App\Support\WeightPoints;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -123,7 +123,7 @@ class SupplierService
     public function ledger(Supplier $supplier): array
     {
         $purchases = $supplier->purchases()
-            ->with('items:id,purchase_id,net_weight')
+            ->with('items:id,purchase_id,net_weight_points')
             ->orderBy('date')
             ->orderBy('id')
             ->get();
@@ -143,8 +143,8 @@ class SupplierService
                 'date' => $purchase->date->toDateString(),
                 'debit' => (string) $purchase->total,
                 'credit' => (string) $purchase->paid,
-                'weight' => number_format($purchase->items->sum(
-                    fn (PurchaseItem $item): float => (float) $item->net_weight,
+                'weight' => number_format((float) WeightPoints::toGrams(
+                    (int) $purchase->items->sum('net_weight_points'),
                 ), 3, '.', ''),
                 'method' => null,
                 'note' => $purchase->notes,

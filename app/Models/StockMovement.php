@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\StockMovementType;
+use App\Support\WeightPoints;
 use Database\Factories\StockMovementFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,11 +12,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-#[Fillable(['item_id', 'type', 'ref_type', 'ref_id', 'weight', 'note', 'user_id'])]
+#[Fillable(['item_id', 'type', 'ref_type', 'ref_id', 'weight_points', 'note', 'user_id'])]
 class StockMovement extends Model
 {
     /** @use HasFactory<StockMovementFactory> */
     use HasFactory, LogsActivity;
+
+    public function getWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['weight_points'] ?? null);
+    }
 
     public function item(): BelongsTo
     {
@@ -31,7 +37,7 @@ class StockMovement extends Model
     {
         return LogOptions::defaults()
             ->useLogName('stock-movements')
-            ->logOnly(['item_id', 'type', 'ref_type', 'ref_id', 'weight', 'note', 'user_id'])
+            ->logOnly(['item_id', 'type', 'ref_type', 'ref_id', 'weight_points', 'note', 'user_id'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -43,7 +49,7 @@ class StockMovement extends Model
     {
         return [
             'type' => StockMovementType::class,
-            'weight' => 'decimal:3',
+            'weight_points' => 'integer',
         ];
     }
 }

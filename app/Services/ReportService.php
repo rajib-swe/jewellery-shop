@@ -140,7 +140,7 @@ class ReportService
     {
         $items = Item::query()
             ->where('status', ItemStatus::InStock->value)
-            ->get(['category_id', 'karat', 'net_weight']);
+            ->get(['category_id', 'karat', 'net_weight_points']);
 
         // Weight is accumulated per karat first, because the value depends on
         // the karat and a category can hold more than one of them.

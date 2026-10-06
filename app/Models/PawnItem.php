@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WeightPoints;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,9 +15,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
     'pawn_id',
     'description',
     'karat',
-    'gross_weight',
-    'stone_weight',
-    'net_weight',
+    'gross_weight_points',
+    'stone_weight_points',
+    'net_weight_points',
     'estimated_value',
     'photo',
     'category_id',
@@ -25,6 +26,21 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class PawnItem extends Model
 {
     use HasFactory, LogsActivity;
+
+    public function getGrossWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['gross_weight_points'] ?? null);
+    }
+
+    public function getStoneWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['stone_weight_points'] ?? null);
+    }
+
+    public function getNetWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['net_weight_points'] ?? null);
+    }
 
     public function pawn(): BelongsTo
     {
@@ -51,7 +67,7 @@ class PawnItem extends Model
         return LogOptions::defaults()
             ->useLogName('pawn_items')
             ->logOnly([
-                'pawn_id', 'description', 'karat', 'gross_weight', 'stone_weight', 'net_weight',
+                'pawn_id', 'description', 'karat', 'gross_weight_points', 'stone_weight_points', 'net_weight_points',
                 'estimated_value', 'photo', 'category_id', 'item_id',
             ])
             ->logOnlyDirty()
@@ -62,9 +78,9 @@ class PawnItem extends Model
     {
         return [
             'karat' => 'integer',
-            'gross_weight' => 'decimal:3',
-            'stone_weight' => 'decimal:3',
-            'net_weight' => 'decimal:3',
+            'gross_weight_points' => 'integer',
+            'stone_weight_points' => 'integer',
+            'net_weight_points' => 'integer',
             'estimated_value' => 'decimal:2',
         ];
     }

@@ -10,6 +10,8 @@ import { useLocaleStore } from '../../stores/locale'
 import { useSalesStore } from '../../stores/sales'
 import { useSettingsStore } from '../../stores/settings'
 import { useCurrency, useWeightFormatter } from '../../utils/format'
+import { pointsFromParts, pointsToGrams, pointsToParts } from '../../utils/weight'
+import WeightPointsInput from '../../components/WeightPointsInput.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -41,14 +43,13 @@ const manualEditingIndex = ref(null)
 const manualForm = reactive({
     name: '',
     karat: 22,
-    weight: '',
+    wparts: { vori: '', ana: '', roti: '', point: '' },
     rate: '',
     making_type: 'fixed',
     making_value: '0.00',
     stone_price: '0.00',
 })
 
-const vatPercentage = computed(() => Number(settingsStore.settings.vat_percentage || 0))
 const categoryItems = computed(() => inventoryStore.categories.map((category) => ({
     title: category.name,
     value: category.id,
@@ -87,10 +88,9 @@ const discountAmount = computed(() => Math.max(round2(discount.value || 0), 0))
 const exchangeTotal = computed(() => round2(exchanges.value.reduce((sum, exchange) => {
     const rate = exchange.rate === '' || exchange.rate === null ? Number(exchange.shop_rate || 0) : Number(exchange.rate)
 
-    return sum + round2(Number(exchange.weight || 0) * rate)
+    return sum + round2(pointsToGrams(pointsFromParts(exchange.wparts)) * rate)
 }, 0)))
-const vat = computed(() => round2((subtotal.value - discountAmount.value) * (vatPercentage.value / 100)))
-const total = computed(() => round2(subtotal.value - discountAmount.value + vat.value - exchangeTotal.value))
+const total = computed(() => round2(subtotal.value - discountAmount.value - exchangeTotal.value))
 const paid = computed(() => round2(payments.value.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)))
 const due = computed(() => round2(total.value - paid.value))
 
@@ -202,7 +202,7 @@ function openManualLine() {
     Object.assign(manualForm, {
         name: '',
         karat: 22,
-        weight: '',
+        wparts: { vori: '', ana: '', roti: '', point: '' },
         rate: '',
         making_type: 'fixed',
         making_value: '0.00',
@@ -223,7 +223,7 @@ function editManualLine(index) {
     Object.assign(manualForm, {
         name: line.name,
         karat: line.karat,
-        weight: line.weight,
+        wparts: pointsToParts(line.weight_points),
         rate: line.rate,
         making_type: line.making_type,
         making_value: line.making_value,
@@ -240,7 +240,9 @@ function saveManualLine() {
         return
     }
 
-    if (!(Number(manualForm.weight) > 0)) {
+    const manualPoints = pointsFromParts(manualForm.wparts)
+
+    if (!(manualPoints > 0)) {
         errorMessage.value = localeStore.t('sales.weightRequired')
         return
     }
@@ -250,7 +252,8 @@ function saveManualLine() {
         tag_no: '',
         name: manualForm.name.trim(),
         karat: Number(manualForm.karat),
-        weight: Number(manualForm.weight).toFixed(3),
+        weight: pointsToGrams(manualPoints).toFixed(5),
+        weight_points: manualPoints,
         manual: true,
         making_type: manualForm.making_type,
         making_value: String(manualForm.making_value || 0),
@@ -288,7 +291,7 @@ function addExchangeRow() {
     exchanges.value.push({
         description: '',
         karat: 22,
-        weight: '',
+        wparts: { vori: '', ana: '', roti: '', point: '' },
         rate: '',
         shop_rate: rateFor(22),
         category_id: null,
@@ -315,7 +318,7 @@ function buildPayload() {
                 item_id: null,
                 name: line.name,
                 karat: Number(line.karat),
-                weight: line.weight,
+                weight_points: line.weight_points,
                 rate: line.rate === '' ? null : Number(line.rate).toFixed(2),
                 making_type: line.making_type,
                 making_value: Number(line.making_value || 0).toFixed(2),
@@ -335,7 +338,7 @@ function buildPayload() {
         exchanges: exchanges.value.map((exchange) => ({
             description: exchange.description.trim(),
             karat: Number(exchange.karat),
-            weight: Number(exchange.weight).toFixed(3),
+            weight_points: pointsFromParts(exchange.wparts),
             rate: exchange.rate === '' ? null : Number(exchange.rate).toFixed(2),
             category_id: exchange.category_id ?? null,
         })),
@@ -366,7 +369,7 @@ function validate() {
             fieldErrors[`exchanges.${index}.description`] = localeStore.t('sales.descriptionRequired')
         }
 
-        if (!(Number(exchange.weight) > 0)) {
+        if (!(pointsFromParts(exchange.wparts) > 0)) {
             fieldErrors[`exchanges.${index}.weight`] = localeStore.t('sales.weightPositive')
         }
     })
@@ -682,17 +685,11 @@ onMounted(load)
                                 />
                             </v-col>
                             <v-col cols="6" md="2">
-                                <v-text-field
-                                    v-model="exchange.weight"
+                                <WeightPointsInput
+                                    v-model="exchange.wparts"
                                     :error-messages="fieldErrors[`exchanges.${index}.weight`]"
-                                    :label="$t('inventory.netWeight')"
-                                    min="0.001"
-                                    step="0.001"
-                                    :suffix="$t('units.gram')"
-                                    type="number"
-                                    variant="outlined"
-                                    density="compact"
                                 />
+
                             </v-col>
                             <v-col cols="6" md="2">
                                 <v-text-field
@@ -816,10 +813,6 @@ onMounted(load)
                                 <template #append>- {{ money(discountAmount) }}</template>
                             </v-list-item>
                             <v-list-item>
-                                <v-list-item-title>{{ $t('common.vat') }} ({{ vatPercentage }}%)</v-list-item-title>
-                                <template #append>{{ money(vat) }}</template>
-                            </v-list-item>
-                            <v-list-item>
                                 <v-list-item-title>{{ $t('sales.oldGoldExchange') }}</v-list-item-title>
                                 <template #append>- {{ money(exchangeTotal) }}</template>
                             </v-list-item>
@@ -870,18 +863,9 @@ onMounted(load)
                                 density="compact"
                             />
                         </v-col>
-                        <v-col cols="6">
-                            <v-text-field
-                                v-model="manualForm.weight"
-                                :label="$t('sales.handwrittenWeight')"
-                                min="0.001"
-                                step="0.001"
-                                :suffix="$t('units.gram')"
-                                type="number"
-                                variant="outlined"
-                                density="compact"
-                            />
-                        </v-col>
+                            <v-col cols="12">
+                                <WeightPointsInput v-model="manualForm.wparts" />
+                            </v-col>
                         <v-col cols="6">
                             <v-text-field
                                 v-model="manualForm.rate"

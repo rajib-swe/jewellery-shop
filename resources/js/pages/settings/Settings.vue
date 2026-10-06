@@ -11,8 +11,10 @@ const settingsStore = useSettingsStore()
 const { pawnPartialMonthRuleOptions: partialMonthItems } = useOptionLabels()
 const canManage = computed(() => authStore.can('manage settings'))
 const weightUnitItems = computed(() => [
-    { title: localeStore.t('settings.weightUnitGram'), value: 'gram' },
-    { title: localeStore.t('settings.weightUnitVori'), value: 'vori' },
+    { title: localeStore.t('units.vori'), value: 'vori' },
+    { title: localeStore.t('units.ana'), value: 'ana' },
+    { title: localeStore.t('units.roti'), value: 'roti' },
+    { title: localeStore.t('units.point'), value: 'point' },
 ])
 const form = reactive({
     shop_name: '',
@@ -22,7 +24,7 @@ const form = reactive({
     shop_logo_url: null,
     vat_percentage: '0.00',
     currency_symbol: '৳',
-    weight_unit: 'gram',
+    weight_unit: 'vori',
     default_pawn_interest_rate: '0.00',
     invoice_footer: '',
     invoice_template: 'demo2',

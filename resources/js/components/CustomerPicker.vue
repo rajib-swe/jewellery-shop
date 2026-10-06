@@ -34,6 +34,7 @@ const quickError = ref('')
 const quickForm = reactive({
     name: '',
     phone: '',
+    address: '',
 })
 const canQuickAdd = computed(() => authStore.can('manage customers'))
 
@@ -94,6 +95,7 @@ function openQuickAdd() {
     quickError.value = ''
     quickForm.name = ''
     quickForm.phone = ''
+    quickForm.address = ''
     quickDialog.value = true
 }
 
@@ -108,6 +110,7 @@ async function quickAdd() {
     const payload = new FormData()
     payload.append('name', quickForm.name.trim())
     payload.append('phone', quickForm.phone.trim())
+    payload.append('address', quickForm.address.trim())
     payload.append('opening_balance', '0.00')
     quickSaving.value = true
 
@@ -210,6 +213,11 @@ watch(
                         placeholder="01712345678"
                         prepend-inner-icon="mdi-phone-outline"
                         required
+                    />
+                    <v-text-field
+                        v-model="quickForm.address"
+                        :label="$t('common.address')"
+                        prepend-inner-icon="mdi-map-marker-outline"
                     />
                 </v-card-text>
                 <v-card-actions>

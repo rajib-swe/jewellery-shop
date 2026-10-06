@@ -268,7 +268,7 @@ export default {
         clearForm: 'ফর্ম খালি',
         saveSale: 'বিক্রয় সংরক্ষণ',
         invoice: 'ইনভয়েস',
-        walkInCustomer: 'হাঁদাবাজার গ্রাহক (ঐচ্ছিক)',
+        walkInCustomer: 'গ্রাহকের নাম',
         saleDate: 'বিক্রয়ের তারিখ',
         items: 'পণ্য',
         addItemHint: 'ট্যাগ, বারকোড বা নাম লিখে স্ক্যান করুন',

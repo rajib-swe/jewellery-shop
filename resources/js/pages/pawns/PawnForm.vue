@@ -7,6 +7,8 @@ import { useLocaleStore } from '../../stores/locale'
 import { usePawnsStore } from '../../stores/pawns'
 import { useSettingsStore } from '../../stores/settings'
 import { useCurrency, useWeightFormatter } from '../../utils/format'
+import { pointsFromParts, pointsToGrams } from '../../utils/weight'
+import WeightPointsInput from '../../components/WeightPointsInput.vue'
 
 const router = useRouter()
 const localeStore = useLocaleStore()
@@ -33,8 +35,8 @@ function blankItem() {
     return {
         description: '',
         karat: 22,
-        gross_weight: '',
-        stone_weight: '0.000',
+        grossParts: { vori: '', ana: '', roti: '', point: '' },
+        stoneParts: { vori: '', ana: '', roti: '', point: '' },
         estimated_value: '',
         category_id: null,
     }
@@ -55,7 +57,7 @@ const loanToValue = computed(() => {
     return (Number(form.principal || 0) / pledgedValue.value * 100).toFixed(2)
 })
 const totalNetWeight = computed(() => form.items.reduce(
-    (total, item) => total + Math.max(0, (Number(item.gross_weight) || 0) - (Number(item.stone_weight) || 0)),
+    (total, item) => total + Math.max(0, pointsToGrams(pointsFromParts(item.grossParts)) - pointsToGrams(pointsFromParts(item.stoneParts))),
     0,
 ))
 
@@ -106,7 +108,7 @@ function validate() {
         return localeStore.t('pawns.needOneItem')
     }
 
-    if (form.items.some((item) => !item.description.trim() || !(Number(item.gross_weight) > 0))) {
+    if (form.items.some((item) => !item.description.trim() || !(pointsFromParts(item.grossParts) > 0))) {
         return localeStore.t('pawns.descriptionRequired')
     }
 
@@ -137,8 +139,8 @@ async function submit() {
     form.items.forEach((item, index) => {
         payload.append(`items[${index}][description]`, item.description.trim())
         payload.append(`items[${index}][karat]`, String(item.karat))
-        payload.append(`items[${index}][gross_weight]`, Number(item.gross_weight).toFixed(3))
-        payload.append(`items[${index}][stone_weight]`, Number(item.stone_weight || 0).toFixed(3))
+        payload.append(`items[${index}][gross_weight_points]`, String(pointsFromParts(item.grossParts)))
+        payload.append(`items[${index}][stone_weight_points]`, String(pointsFromParts(item.stoneParts)))
         payload.append(`items[${index}][estimated_value]`, Number(item.estimated_value || 0).toFixed(2))
 
         if (item.category_id) {
@@ -315,24 +317,10 @@ onMounted(load)
                                                 />
                                             </td>
                                             <td>
-                                                <v-text-field
-                                                    v-model="item.gross_weight"
-                                                    density="compact"
-                                                    min="0.001"
-                                                    step="0.001"
-                                                    type="number"
-                                                    variant="outlined"
-                                                />
+                                                <WeightPointsInput v-model="item.grossParts" />
                                             </td>
                                             <td>
-                                                <v-text-field
-                                                    v-model="item.stone_weight"
-                                                    density="compact"
-                                                    min="0"
-                                                    step="0.001"
-                                                    type="number"
-                                                    variant="outlined"
-                                                />
+                                                <WeightPointsInput v-model="item.stoneParts" />
                                             </td>
                                             <td>
                                                 <v-text-field

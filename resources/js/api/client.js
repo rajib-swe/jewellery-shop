@@ -1,5 +1,24 @@
 import axios from 'axios'
 
+const LOCALE_STORAGE_KEY = 'jewellery-shop.locale'
+
+function currentLocale() {
+    try {
+        const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY)
+
+        return stored === 'en' ? 'en' : 'bn'
+    } catch {
+        return 'bn'
+    }
+}
+
+function withLocaleHeader(config) {
+    config.headers = config.headers ?? {}
+    config.headers['Accept-Language'] = currentLocale()
+
+    return config
+}
+
 const defaultHeaders = {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
@@ -52,5 +71,9 @@ apiClient.interceptors.response.use(
         return Promise.reject(error)
     },
 )
+
+for (const client of [apiClient, webClient]) {
+    client.interceptors.request.use(withLocaleHeader)
+}
 
 export default apiClient

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WeightPoints;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,12 +10,17 @@ use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 #[Fillable([
-    'sale_id', 'item_id', 'tag_no', 'name', 'karat', 'weight',
+    'sale_id', 'item_id', 'tag_no', 'name', 'karat', 'weight_points',
     'rate', 'gold_value', 'making', 'stone_price', 'line_total',
 ])]
 class SaleItem extends Model
 {
     use LogsActivity;
+
+    public function getWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['weight_points'] ?? null);
+    }
 
     public function sale(): BelongsTo
     {
@@ -31,7 +37,7 @@ class SaleItem extends Model
         return LogOptions::defaults()
             ->useLogName('sale-items')
             ->logOnly([
-                'sale_id', 'item_id', 'tag_no', 'name', 'karat', 'weight',
+                'sale_id', 'item_id', 'tag_no', 'name', 'karat', 'weight_points',
                 'rate', 'gold_value', 'making', 'stone_price', 'line_total',
             ])
             ->logOnlyDirty()
@@ -42,7 +48,7 @@ class SaleItem extends Model
     {
         return [
             'karat' => 'integer',
-            'weight' => 'decimal:3',
+            'weight_points' => 'integer',
             'rate' => 'decimal:2',
             'gold_value' => 'decimal:2',
             'making' => 'decimal:2',
