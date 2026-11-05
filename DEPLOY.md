@@ -156,15 +156,18 @@ account name, for example database `shop_goldapp` and user `shop_goldapp`.
 ### 7.4 Upload the files
 
 Upload an archive of the project into `/home/USER/goldapp` with **File Manager**
-and extract it, or `git clone` when Terminal is available. Two directories are
-not portable and should be produced on the server:
+and extract it, or `git clone` when Terminal is available.
 
-- `vendor/` - run `composer install` (below). If the host has no Composer or
-  Terminal, upload a `vendor/` built locally on the same PHP 8.3 version. A
-  stale or partial `vendor/` makes every `artisan` command fail.
-- `public/build/`, `public/sw.js`, `public/workbox-*.js` - build locally with
-  `npm ci && npm run build` and upload them. The manifest is required, and the
-  service worker only exists after a build.
+`vendor/` is not portable and must be produced on the server: run
+`composer install` (below). If the host has no Composer or Terminal, upload a
+`vendor/` built locally on the same PHP 8.3 version. A stale or partial
+`vendor/` makes every `artisan` command fail.
+
+The compiled frontend is tracked in git (`public/build/`, `public/sw.js`,
+`public/workbox-*.js`), so a normal `git pull` brings it. After changing
+frontend code, run `npm ci && npm run build` locally and commit the rebuilt
+files. Without that manifest the live site throws
+`ViteManifestNotFoundException`.
 
 Do not upload `node_modules/`, `.git/`, or a local `.env`.
 
@@ -281,7 +284,6 @@ Only do this when every request really arrives through your proxy.
 cd /home/USER/goldapp
 git pull
 composer install --no-dev --optimize-autoloader
-npm ci && npm run build          # or upload public/build
 php artisan migrate --force
 php artisan optimize:clear
 php artisan optimize
