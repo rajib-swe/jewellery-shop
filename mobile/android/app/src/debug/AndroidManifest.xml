@@ -4,4 +4,9 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Debug builds only. The API base URL is a plain http:// Laragon host
+         during local development, and Android blocks cleartext by default from
+         API 28. Release builds are untouched and stay HTTPS-only. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>
