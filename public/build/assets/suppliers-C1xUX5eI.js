@@ -1,0 +1,1 @@
+var e=[`supplier`,`karigor`];export{e as t};

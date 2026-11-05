@@ -108,3 +108,181 @@ See `config/sms.php` for the shape the gateway is called with.
 Terminate TLS at the web server and redirect HTTP to HTTPS. The app does not
 force it itself, because a forced redirect behind some reverse proxies turns
 into a redirect loop.
+
+## 7. cPanel / shared hosting
+
+Deploy with the application kept outside the web root and the domain pointed
+straight at `public/`:
+
+```text
+/home/USER/goldapp/          <- application, not reachable over HTTP
+/home/USER/goldapp/public/   <- document root for the domain
+```
+
+This layout keeps `.env`, `vendor/`, `storage/` and the database dumps off the
+web. Do not upload the application into `public_html`, and do not use a root
+rewrite as a substitute for a correct document root.
+
+### 7.1 Domain and document root
+
+cPanel -> **Domains** (or **Subdomains**) -> select the domain -> set
+**Document Root** to `/home/USER/goldapp/public`. Replace `USER` with the
+cPanel account name.
+
+### 7.2 PHP version and extensions
+
+cPanel -> **MultiPHP Manager** -> set the domain to PHP 8.3. Then open
+**Select PHP Version -> Extensions** and confirm these are enabled (most are on
+by default):
+
+`fileinfo`, `gd`, `mbstring`, `openssl`, `pdo_mysql`, `zip`, `dom`, `xml`,
+`xmlwriter`, `xmlreader`, `simplexml`, `curl`, `tokenizer`, `ctype`, `json`,
+`zlib`.
+
+`gd` is needed by the PDF packages, `zip` by the Excel export, and `dom`/`xml`
+by the Swagger generator. A missing extension fails when the feature is first
+used, not at upload time.
+
+If large exports, backups or photo uploads fail, raise the limits in
+**MultiPHP INI Editor**: `memory_limit=256M`, `upload_max_filesize=20M`,
+`post_max_size=20M` and `max_execution_time=120`.
+
+### 7.3 Database
+
+cPanel -> **MySQL Databases**: create a database and a user, then add the user
+to the database with **All Privileges**. cPanel prefixes both names with the
+account name, for example database `shop_goldapp` and user `shop_goldapp`.
+
+### 7.4 Upload the files
+
+Upload an archive of the project into `/home/USER/goldapp` with **File Manager**
+and extract it, or `git clone` when Terminal is available. Two directories are
+not portable and should be produced on the server:
+
+- `vendor/` - run `composer install` (below). If the host has no Composer or
+  Terminal, upload a `vendor/` built locally on the same PHP 8.3 version. A
+  stale or partial `vendor/` makes every `artisan` command fail.
+- `public/build/`, `public/sw.js`, `public/workbox-*.js` - build locally with
+  `npm ci && npm run build` and upload them. The manifest is required, and the
+  service worker only exists after a build.
+
+Do not upload `node_modules/`, `.git/`, or a local `.env`.
+
+### 7.5 Environment
+
+Copy `.env.example` to `.env` with File Manager and set:
+
+| Key | Value |
+| --- | --- |
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` |
+| `APP_URL` | `https://shop.example.com` |
+| `APP_KEY` | generated in 7.6 |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` | from 7.3 |
+| `DB_HOST` | usually `localhost` on cPanel |
+| `SESSION_SECURE_COOKIE` | `true` (after HTTPS works) |
+| `SESSION_HTTP_ONLY` | `true` |
+| `SESSION_SAME_SITE` | `lax` |
+| `SESSION_DOMAIN` | leave `null` for a single domain |
+| `LOG_LEVEL` | `error` |
+| `ADMIN_NAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` | first admin; password 12+ characters |
+
+`ADMIN_PASSWORD` must be 12 characters or more or the seeder refuses to run
+outside `local`. Quote values that contain `#`, spaces or `$`.
+
+`SESSION_DRIVER`, `CACHE_STORE` and `QUEUE_CONNECTION` stay on `database`, so no
+Redis or other service is required. If the host offers Redis, moving all three
+to it is the biggest speed win.
+
+### 7.6 Install, migrate, seed
+
+Open cPanel -> **Terminal** (or use a one-off cron job when Terminal is
+unavailable) and run from `/home/USER/goldapp`:
+
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan key:generate --force
+php artisan migrate --force
+php artisan db:seed --force
+php artisan storage:link
+php artisan optimize
+```
+
+- `key:generate` writes `APP_KEY`. Skip it when moving an existing install that
+  already has a key, or existing encrypted data becomes unreadable.
+- `db:seed` is safe to re-run; roles, permissions, settings and the admin user
+  are created with `firstOrNew` / `findOrCreate`.
+- `storage:link` creates `public/storage` -> `../storage/app/public`. If
+  `symlink()` is disabled on the host, create the link in File Manager or ask
+  support to enable it; customer photos and the logo are served through it.
+
+### 7.7 Permissions
+
+```bash
+find storage bootstrap/cache -type d -exec chmod 775 {} \;
+find storage bootstrap/cache -type f -exec chmod 664 {} \;
+```
+
+The files should be owned by the cPanel user. Never use `777`.
+
+### 7.8 Cron jobs
+
+cPanel -> **Cron Jobs** -> add both, each **once per minute**:
+
+```cron
+* * * * * /usr/local/bin/php /home/USER/goldapp/artisan schedule:run >> /dev/null 2>&1
+* * * * * /usr/local/bin/php /home/USER/goldapp/artisan queue:work --stop-when-empty --max-time=55 >> /dev/null 2>&1
+```
+
+The first runs the nightly backup and pawn jobs from `routes/console.php`; the
+second drains the SMS jobs that `pawns:send-reminders` queues. `--max-time=55`
+stops a run before the next minute so jobs cannot pile up.
+
+Find the correct PHP binary with `which php` or `php -v`. On EasyApache hosts it
+is often versioned, for example `/opt/cpanel/ea-php83/root/usr/bin/php`. Using
+the wrong binary runs the app on a different PHP version than the website.
+
+### 7.9 HTTPS
+
+cPanel -> **SSL/TLS Status** -> **Run AutoSSL** for the domain. Then enable
+**Force HTTPS Redirect** under Domains. Only after the certificate is active,
+set `APP_URL` to `https://...` and `SESSION_SECURE_COOKIE=true`; otherwise
+logins break because the browser refuses to send the secure cookie over HTTP.
+
+Pick one canonical host (`www` or the bare domain) and redirect the other. Mixing
+them makes the session cookie and Sanctum's stateful check fail.
+
+### 7.10 Behind Cloudflare or another proxy
+
+If traffic passes through Cloudflare, a load balancer or a reverse proxy,
+Laravel may see the request as HTTP and generate `http://` links. In
+`bootstrap/app.php`, inside the `withMiddleware` closure, add:
+
+```php
+$middleware->trustProxies(at: '*');
+```
+
+Only do this when every request really arrives through your proxy.
+
+### 7.11 Verify
+
+- `https://shop.example.com/up` returns HTTP 200 (the Laravel health endpoint).
+- Log in at `/login`, upload an item photo and open it (checks `storage:link`).
+- Create a sale and print/download the invoice and PDF.
+- `php artisan schedule:list` shows the three scheduled commands.
+- After changing `.env` on a cached install, run `php artisan optimize:clear`
+  then `php artisan optimize`; cached config ignores the new values.
+- Check `storage/logs/laravel.log` after the first requests. It must be
+  writable. Keep `LOG_LEVEL=error` in production.
+
+### 7.12 Updating a running install
+
+```bash
+cd /home/USER/goldapp
+git pull
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build          # or upload public/build
+php artisan migrate --force
+php artisan optimize:clear
+php artisan optimize
+```
