@@ -30,7 +30,7 @@ Confirmed against the Laravel source on 2026-09-24. Corrections are marked; `end
 
 ```
 Base URL (dev):         http://goldapp.test:8080/api/v1
-Base URL (production):  https://<shop host>/api/v1   -- not chosen yet
+Base URL (production):  https://appjewellery.shop/api/v1
 Auth:                  POST /login          -> { data: user, meta, token }
                        POST /logout         -> { message } (revokes the bearer token)
                        GET  /me             -> { data: user }   CORRECTION: data.roles is an array,
@@ -196,12 +196,14 @@ Commit: `feat(mobile): push notifications, offline read cache, and release build
 ## Progress checklist (agent updates this)
 
 - [x] Step 1: Bootstrap, auth, and shell
-- [ ] Step 2: Dashboard, gold rate, and customers
+- [x] Step 2: Dashboard, gold rate, and customers
 - [ ] Step 3: Inventory and barcode scan
 - [ ] Step 4: Sale entry and pawn accounts
 - [ ] Step 5: Push notifications, offline read cache, and release build
 
 Step 1 notes: `/sales/preview` does not exist, so Step 4 must read totals from the `POST /sales` response instead of a preview call. `/device-tokens` and the push backend do not exist either, so Step 5 is blocked on the server side.
+
+Step 2 notes: the dashboard is served by `GET /reports/dashboard` and is gated by `permission:view reports`; the gold rate update is gated in the UI to admin/manager roles and the API to `permission:manage gold rates`. Rates and customers were exercised against the local HTTP API. The local dev database is behind the current seeders (admin lacks `view reports`, and the `expenses` table is missing), so dashboard figures could not be compared locally; a seeded install will expose the same payload the web dashboard uses.
 
 ---
 

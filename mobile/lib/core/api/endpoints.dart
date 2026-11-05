@@ -4,6 +4,7 @@ abstract final class Endpoints {
   static const String me = '/me';
 
   static const String settings = '/settings';
+  static const String dashboard = '/reports/dashboard';
 
   static const String goldRates = '/gold-rates';
   static const String latestGoldRates = '/gold-rates/latest';

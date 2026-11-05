@@ -26,6 +26,17 @@ List<Object?> dataList(Object? body) {
   throw const FormatException('Expected a list in the API data payload.');
 }
 
+Map<String, dynamic> metaMap(Object? body) {
+  if (body is Map<String, dynamic>) {
+    final meta = body['meta'];
+    if (meta is Map<String, dynamic>) {
+      return meta;
+    }
+  }
+
+  return const {};
+}
+
 String? metaMessage(Object? body) {
   if (body is! Map<String, dynamic>) {
     return null;

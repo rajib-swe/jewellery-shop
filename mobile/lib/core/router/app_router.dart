@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
+import '../../screens/customers/customer_profile_screen.dart';
 import '../../screens/customers/customers_screen.dart';
 import '../../screens/dashboard/dashboard_screen.dart';
 import '../../screens/more/more_screen.dart';
@@ -69,6 +70,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.customers,
                 builder: (context, state) => const CustomersScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) => CustomerProfileScreen(
+                      customerId:
+                          int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

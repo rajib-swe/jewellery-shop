@@ -33,9 +33,7 @@ class ApiException implements Exception {
     final payload = body is Map<String, dynamic> ? body : null;
 
     return ApiException(
-      message:
-          _readMessage(payload) ??
-          _defaultMessage(statusCode, error.type),
+      message: _readMessage(payload) ?? _defaultMessage(statusCode, error.type),
       statusCode: statusCode,
       fieldErrors: _readFieldErrors(payload),
       isUnauthorized: statusCode == 401,
@@ -49,6 +47,9 @@ class ApiException implements Exception {
     final errors = fieldErrors[field];
     return (errors == null || errors.isEmpty) ? null : errors.first;
   }
+
+  @override
+  String toString() => message;
 
   static Map<String, List<String>> _readFieldErrors(
     Map<String, dynamic>? payload,
@@ -81,6 +82,14 @@ class ApiException implements Exception {
     }
 
     return null;
+  }
+
+  static Future<T> guard<T>(Future<T> Function() request) async {
+    try {
+      return await request();
+    } on DioException catch (error) {
+      throw ApiException.from(error);
+    }
   }
 
   static String _defaultMessage(int? statusCode, DioExceptionType type) {
