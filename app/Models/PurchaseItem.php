@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WeightPoints;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,9 +16,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
     'tag_no',
     'name',
     'karat',
-    'gross_weight',
-    'stone_weight',
-    'net_weight',
+    'gross_weight_points',
+    'stone_weight_points',
+    'net_weight_points',
     'rate',
     'making_value',
     'amount',
@@ -25,6 +26,21 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class PurchaseItem extends Model
 {
     use HasFactory, LogsActivity;
+
+    public function getGrossWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['gross_weight_points'] ?? null);
+    }
+
+    public function getStoneWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['stone_weight_points'] ?? null);
+    }
+
+    public function getNetWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['net_weight_points'] ?? null);
+    }
 
     public function purchase(): BelongsTo
     {
@@ -42,7 +58,7 @@ class PurchaseItem extends Model
             ->useLogName('purchase_items')
             ->logOnly([
                 'purchase_id', 'item_id', 'tag_no', 'name', 'karat',
-                'gross_weight', 'stone_weight', 'net_weight', 'rate', 'making_value', 'amount',
+                'gross_weight_points', 'stone_weight_points', 'net_weight_points', 'rate', 'making_value', 'amount',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
@@ -52,9 +68,9 @@ class PurchaseItem extends Model
     {
         return [
             'karat' => 'integer',
-            'gross_weight' => 'decimal:3',
-            'stone_weight' => 'decimal:3',
-            'net_weight' => 'decimal:3',
+            'gross_weight_points' => 'integer',
+            'stone_weight_points' => 'integer',
+            'net_weight_points' => 'integer',
             'rate' => 'decimal:2',
             'making_value' => 'decimal:2',
             'amount' => 'decimal:2',

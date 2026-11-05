@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\StockMovementType;
+use App\Support\WeightPoints;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -69,19 +70,34 @@ class StockService
         ?string $referenceId = null,
     ): Item {
         $tagNo = $data['tag_no'] ?? ('ITM-'.Str::ulid()->toBase32());
-        $data = Arr::except($data, ['tag_no', 'net_weight', 'status', 'image']);
-        $netWeight = $this->netWeight(
-            (float) $data['gross_weight'],
-            (float) ($data['stone_weight'] ?? 0),
-        );
+        $grossPoints = WeightPoints::fromGrams($data['gross_weight']);
+        $stonePoints = WeightPoints::fromGrams($data['stone_weight'] ?? 0);
+        $netPoints = $grossPoints - $stonePoints;
+
+        if ($netPoints <= 0) {
+            throw ValidationException::withMessages([
+                'gross_weight' => 'Gross weight must be greater than zero.',
+            ]);
+        }
+
+        if ($stonePoints > $grossPoints) {
+            throw ValidationException::withMessages([
+                'stone_weight' => 'Stone weight cannot exceed gross weight.',
+            ]);
+        }
+
+        $data = Arr::except($data, ['tag_no', 'net_weight', 'status', 'image', 'gross_weight', 'stone_weight']);
+        $photoPath = $this->storePhoto($photo);
         $photoPath = $this->storePhoto($photo);
 
         try {
-            return DB::transaction(function () use ($data, $tagNo, $netWeight, $photoPath, $user, $status, $referenceType, $referenceId): Item {
+            return DB::transaction(function () use ($data, $tagNo, $netPoints, $grossPoints, $stonePoints, $photoPath, $user, $status, $referenceType, $referenceId): Item {
                 $item = Item::query()->create([
                     ...$data,
                     'tag_no' => $tagNo,
-                    'net_weight' => $netWeight,
+                    'gross_weight_points' => $grossPoints,
+                    'stone_weight_points' => $stonePoints,
+                    'net_weight_points' => $netPoints,
                     'status' => $status,
                     'image' => $photoPath,
                 ]);
@@ -89,7 +105,7 @@ class StockService
                 $this->recordMovement(
                     $item,
                     StockMovementType::In,
-                    $netWeight,
+                    (float) WeightPoints::toGrams($netPoints),
                     $user,
                     'Item added to inventory',
                     $referenceType ?? 'item',
@@ -132,25 +148,45 @@ class StockService
         try {
             $updatedItem = DB::transaction(function () use ($item, $data, $newPhoto, $user): Item {
                 $lockedItem = Item::query()->lockForUpdate()->findOrFail($item->getKey());
-                $oldNetWeight = (float) $lockedItem->net_weight;
-                $newNetWeight = $this->netWeight(
-                    (float) ($data['gross_weight'] ?? $lockedItem->gross_weight),
-                    (float) ($data['stone_weight'] ?? $lockedItem->stone_weight),
-                );
+                $oldNetPoints = (int) $lockedItem->net_weight_points;
+                $newGrossPoints = array_key_exists('gross_weight', $data) ? WeightPoints::fromGrams($data['gross_weight']) : (int) $lockedItem->gross_weight_points;
+                $newStonePoints = array_key_exists('stone_weight', $data) ? WeightPoints::fromGrams($data['stone_weight'] ?? 0) : (int) $lockedItem->stone_weight_points;
+                $newNetPoints = $newGrossPoints - $newStonePoints;
 
-                $lockedItem->update([
-                    ...$data,
-                    'net_weight' => $newNetWeight,
-                    'image' => $newPhoto,
-                ]);
+                if ($newNetPoints <= 0) {
+                    throw ValidationException::withMessages([
+                        'gross_weight' => 'Gross weight must be greater than zero.',
+                    ]);
+                }
 
-                $weightDifference = round($newNetWeight - $oldNetWeight, 3);
+                if ($newStonePoints > $newGrossPoints) {
+                    throw ValidationException::withMessages([
+                        'stone_weight' => 'Stone weight cannot exceed gross weight.',
+                    ]);
+                }
 
-                if ($weightDifference !== 0.0) {
+                $updateData = Arr::except($data, ['gross_weight', 'stone_weight']);
+
+                if (array_key_exists('gross_weight', $data)) {
+                    $updateData['gross_weight_points'] = $newGrossPoints;
+                }
+
+                if (array_key_exists('stone_weight', $data)) {
+                    $updateData['stone_weight_points'] = $newStonePoints;
+                }
+
+                $updateData['net_weight_points'] = $newNetPoints;
+                $updateData['image'] = $newPhoto;
+
+                $lockedItem->update($updateData);
+
+                $weightDifference = abs($newNetPoints - $oldNetPoints);
+
+                if ($weightDifference !== 0) {
                     $this->recordMovement(
                         $lockedItem,
                         StockMovementType::Adjust,
-                        abs($weightDifference),
+                        (float) WeightPoints::toGrams($weightDifference),
                         $user,
                         'Item weight updated',
                         'item',
@@ -306,7 +342,7 @@ class StockService
         $rows = Item::query()
             ->where('status', ItemStatus::InStock->value)
             ->select('karat')
-            ->selectRaw('COALESCE(SUM(net_weight), 0) as total_net_weight')
+            ->selectRaw('COALESCE(SUM(net_weight_points), 0) as total_points')
             ->selectRaw('COUNT(*) as item_count')
             ->groupBy('karat')
             ->orderBy('karat')
@@ -319,7 +355,7 @@ class StockService
 
                 return [
                     'karat' => $karat->value,
-                    'total_net_weight' => number_format((float) ($row->total_net_weight ?? 0), 3, '.', ''),
+                    'total_net_weight' => number_format((float) WeightPoints::toGrams((int) ($row->total_points ?? 0)), 3, '.', ''),
                     'item_count' => (int) ($row->item_count ?? 0),
                 ];
             })
@@ -379,29 +415,12 @@ class StockService
     ): StockMovement {
         return $item->movements()->create([
             'type' => $type,
-            'weight' => number_format($weight, 3, '.', ''),
+            'weight_points' => WeightPoints::fromGrams($weight),
             'note' => $note,
             'ref_type' => $referenceType,
             'ref_id' => $referenceId,
             'user_id' => $user->getKey(),
         ]);
-    }
-
-    private function netWeight(float $grossWeight, float $stoneWeight): string
-    {
-        if ($grossWeight <= 0) {
-            throw ValidationException::withMessages([
-                'gross_weight' => 'Gross weight must be greater than zero.',
-            ]);
-        }
-
-        if ($stoneWeight < 0 || $stoneWeight > $grossWeight) {
-            throw ValidationException::withMessages([
-                'stone_weight' => 'Stone weight cannot exceed gross weight.',
-            ]);
-        }
-
-        return number_format($grossWeight - $stoneWeight, 3, '.', '');
     }
 
     private function storePhoto(?UploadedFile $photo): ?string

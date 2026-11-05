@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\CashSourceType;
 use App\ItemStatus;
 use App\MakingType;
 use App\Models\Item;
 use App\Models\Sale;
 use App\Models\User;
 use App\SaleStatus;
+use App\Support\WeightPoints;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -24,6 +26,7 @@ class SaleService
         private readonly StockService $stock,
         private readonly SettingsService $settings,
         private readonly GoldRateService $goldRates,
+        private readonly CashBookService $cashBook,
     ) {}
 
     /**
@@ -133,7 +136,11 @@ class SaleService
                     $canOverrideRate,
                     $rateCache,
                 );
-                $weightGrams = $item === null ? (float) $line['weight'] : (float) $item->net_weight;
+                $weightGrams = $item === null
+                    ? (isset($line['weight_points']) && (int) $line['weight_points'] > 0
+                        ? (float) WeightPoints::toGrams((int) $line['weight_points'])
+                        : (float) $line['weight'])
+                    : (float) $item->net_weight;
                 $makingType = $item === null ? MakingType::from($line['making_type'] ?? 'fixed') : $item->making_type;
                 $makingValue = $item === null ? (float) ($line['making_value'] ?? $line['making'] ?? 0) : (float) $item->making_value;
                 $stonePriceGrams = $item === null ? (float) ($line['stone_price'] ?? 0) : (float) $item->stone_price;
@@ -149,7 +156,9 @@ class SaleService
                     'tag_no' => $item?->tag_no ?? '',
                     'name' => $item === null ? $line['name'] : $item->name,
                     'karat' => $karat,
-                    'weight' => number_format($weightGrams, 3, '.', ''),
+                    'weight_points' => $item === null && isset($line['weight_points']) && (int) $line['weight_points'] > 0
+                        ? (int) $line['weight_points']
+                        : WeightPoints::fromGrams($weightGrams),
                     'rate' => $this->fromCents($this->toCents($rate)),
                     'gold_value' => $this->fromCents($goldValueCents),
                     'making' => $this->fromCents($makingCents),
@@ -174,7 +183,9 @@ class SaleService
                     $canOverrideRate,
                     $rateCache,
                 );
-                $weightGrams = (float) $exchange['weight'];
+                $weightGrams = isset($exchange['weight_points']) && (int) $exchange['weight_points'] > 0
+                    ? (float) WeightPoints::toGrams((int) $exchange['weight_points'])
+                    : (float) $exchange['weight'];
                 $amountCents = $this->toCents($weightGrams * $rate);
 
                 $exchangeCents += $amountCents;
@@ -187,8 +198,8 @@ class SaleService
                             'category_id' => (int) $exchange['category_id'],
                             'name' => $exchange['description'],
                             'karat' => (int) $exchange['karat'],
-                            'gross_weight' => number_format($weightGrams, 3, '.', ''),
-                            'stone_weight' => '0.000',
+                            'gross_weight' => number_format($weightGrams, 5, '.', ''),
+                            'stone_weight' => '0.00000',
                             'making_type' => MakingType::Fixed->value,
                             'making_value' => '0.00',
                         ],
@@ -205,7 +216,9 @@ class SaleService
                 $sale->exchanges()->create([
                     'description' => $exchange['description'],
                     'karat' => (int) $exchange['karat'],
-                    'weight' => number_format($weightGrams, 3, '.', ''),
+                    'weight_points' => isset($exchange['weight_points']) && (int) $exchange['weight_points'] > 0
+                        ? (int) $exchange['weight_points']
+                        : WeightPoints::fromGrams($weightGrams),
                     'rate' => $this->fromCents($this->toCents($rate)),
                     'amount' => $this->fromCents($amountCents),
                     'item_id' => $scrapItemId,
@@ -251,12 +264,25 @@ class SaleService
             }
 
             foreach ($payments as $payment) {
-                $sale->payments()->create([
+                $createdPayment = $sale->payments()->create([
                     'method' => $payment['method'],
                     'amount' => $this->fromCents($this->toCents((float) $payment['amount'])),
                     'reference' => $payment['reference'] ?? null,
                     'user_id' => $user->getKey(),
                 ]);
+
+                $this->cashBook->recordIn(
+                    CashSourceType::SalePayment,
+                    $createdPayment->getKey(),
+                    (float) $createdPayment->amount,
+                    $user,
+                    [
+                        'date' => $date->toDateString(),
+                        'method' => $createdPayment->method->value,
+                        'reference' => $createdPayment->reference,
+                        'note' => "Sale {$sale->invoice_no}",
+                    ],
+                );
             }
 
             $sale->update([
@@ -302,12 +328,24 @@ class SaleService
                 ]);
             }
 
-            $lockedSale->payments()->create([
+            $createdPayment = $lockedSale->payments()->create([
                 'method' => $data['method'],
                 'amount' => $this->fromCents($amountCents),
                 'reference' => $data['reference'] ?? null,
                 'user_id' => $user->getKey(),
             ]);
+
+            $this->cashBook->recordIn(
+                CashSourceType::SalePayment,
+                $createdPayment->getKey(),
+                (float) $createdPayment->amount,
+                $user,
+                [
+                    'method' => $createdPayment->method->value,
+                    'reference' => $createdPayment->reference,
+                    'note' => "Due payment for sale {$lockedSale->invoice_no}",
+                ],
+            );
 
             $paidCents = $this->toCents((float) $lockedSale->paid) + $amountCents;
             $totalCents = $this->toCents((float) $lockedSale->total);
@@ -367,6 +405,12 @@ class SaleService
                 }
 
                 $this->stock->delete($scrapItem);
+            }
+
+            // The money the customer handed over goes back out of the drawer, so
+            // every ledger row written for those payments is reversed with them.
+            foreach ($lockedSale->payments as $payment) {
+                $this->cashBook->forgetSource(CashSourceType::SalePayment, $payment->getKey());
             }
 
             $lockedSale->payments()->delete();

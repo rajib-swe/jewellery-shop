@@ -49,6 +49,16 @@ class DatabaseSeeder extends Seeder
                 'manage suppliers',
                 'view purchases',
                 'manage purchases',
+                'view accounts',
+                'manage accounts',
+                'close accounts',
+                'view reports',
+                'view users',
+                'manage users',
+                'view roles',
+                'manage roles',
+                'view activity log',
+                'manage backups',
             ];
 
             foreach ($permissionNames as $permissionName) {
@@ -59,7 +69,11 @@ class DatabaseSeeder extends Seeder
 
             $rolePermissions = [
                 'admin' => $permissionNames,
-                'manager' => $permissionNames,
+                // A manager runs the shop day to day, so they get the audit
+                // trail and the backups, but handing out permissions is an
+                // administrator's job: a role that can grant itself everything
+                // makes "manage roles" meaningless.
+                'manager' => array_values(array_diff($permissionNames, ['manage roles'])),
                 'cashier' => [
                     'access api',
                     'view settings',
@@ -69,6 +83,8 @@ class DatabaseSeeder extends Seeder
                     'view sales',
                     'view pawns',
                     'view suppliers',
+                    'view accounts',
+                    'view reports',
                 ],
             ];
 
@@ -87,6 +103,14 @@ class DatabaseSeeder extends Seeder
                 'forfeit pawns',
                 'manage suppliers',
                 'view purchases',
+                'manage accounts',
+                'close accounts',
+                'view users',
+                'manage users',
+                'view roles',
+                'manage roles',
+                'view activity log',
+                'manage backups',
             ]);
 
             $admin = User::firstOrNew([
@@ -113,6 +137,10 @@ class DatabaseSeeder extends Seeder
                 $this->call(PawnSeeder::class);
                 $this->call(SupplierSeeder::class);
                 $this->call(PurchaseSeeder::class);
+                $this->call(AccountSeeder::class);
+                // After the other modules, so the demo staff it creates can
+                // audit records that already exist.
+                $this->call(AdminSeeder::class);
             }
         });
     }

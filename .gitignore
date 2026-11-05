@@ -23,6 +23,8 @@
 /public/workbox-*.js
 /storage/*.key
 /storage/pail
+# Database dumps hold every customer, every sale and every gold rate.
+/storage/app/private/backups
 /vendor
 _ide_helper.php
 Homestead.json

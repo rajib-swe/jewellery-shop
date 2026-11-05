@@ -4,6 +4,7 @@ import { ITEM_STATUSES, KARAT_VALUES, MAKING_TYPES, STOCK_MOVEMENT_TYPES } from 
 import { PAYMENT_METHODS, SALE_STATUSES } from './sales'
 import { GOLD_KARAT_VALUES } from './gold-rates'
 import { SUPPLIER_TYPES } from './suppliers'
+import { CASH_DIRECTIONS, CASH_SOURCE_TYPES, EXPENSE_CATEGORIES } from './accounts'
 import {
     PAWN_INTEREST_TYPES,
     PAWN_PARTIAL_MONTH_RULES,
@@ -74,6 +75,21 @@ export function useOptionLabels() {
         value,
     })))
 
+    const expenseCategoryOptions = computed(() => EXPENSE_CATEGORIES.map((value) => ({
+        title: localeStore.t(`options.expense${toPascalCase(value)}`),
+        value,
+    })))
+
+    const cashDirectionOptions = computed(() => CASH_DIRECTIONS.map((value) => ({
+        title: localeStore.t(`options.cash${toPascalCase(value)}`),
+        value,
+    })))
+
+    const cashSourceTypeOptions = computed(() => CASH_SOURCE_TYPES.map((value) => ({
+        title: localeStore.t(`options.cashSource${toPascalCase(value)}`),
+        value,
+    })))
+
     return {
         karatOptions,
         goldKaratOptions,
@@ -87,6 +103,9 @@ export function useOptionLabels() {
         pawnInterestTypeOptions,
         pawnPartialMonthRuleOptions,
         supplierTypeOptions,
+        expenseCategoryOptions,
+        cashDirectionOptions,
+        cashSourceTypeOptions,
     }
 }
 

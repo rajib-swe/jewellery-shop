@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\CashSourceType;
 use App\ItemStatus;
 use App\Karat;
 use App\MakingType;
@@ -9,6 +10,7 @@ use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\User;
+use App\Support\WeightPoints;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -23,6 +25,7 @@ class PurchaseService
         private readonly GoldRateService $goldRates,
         private readonly StockService $stock,
         private readonly InvoiceNumberService $invoiceNumbers,
+        private readonly CashBookService $cashBook,
     ) {}
 
     /**
@@ -158,9 +161,9 @@ class PurchaseService
                     'tag_no' => $item->tag_no,
                     'name' => $line['name'],
                     'karat' => $karat,
-                    'gross_weight' => number_format($grossWeight, 3, '.', ''),
-                    'stone_weight' => number_format($stoneWeight, 3, '.', ''),
-                    'net_weight' => number_format($netWeight, 3, '.', ''),
+                    'gross_weight_points' => WeightPoints::fromGrams($grossWeight),
+                    'stone_weight_points' => WeightPoints::fromGrams($stoneWeight),
+                    'net_weight_points' => WeightPoints::fromGrams($grossWeight) - WeightPoints::fromGrams($stoneWeight),
                     'rate' => $this->fromCents($this->toCents($rate)),
                     'making_value' => $this->fromCents($makingCents),
                     'amount' => $this->fromCents($amountCents),
@@ -189,17 +192,32 @@ class PurchaseService
                     ]);
                 }
 
-                $purchase->payments()->create([
+                $paymentDate = isset($payment['date'])
+                    ? CarbonImmutable::parse($payment['date'])->startOfDay()->toDateString()
+                    : $date->toDateString();
+
+                $createdPayment = $purchase->payments()->create([
                     'supplier_id' => $purchase->supplier_id,
                     'amount' => $this->fromCents($paidCents),
-                    'date' => isset($payment['date'])
-                        ? CarbonImmutable::parse($payment['date'])->startOfDay()->toDateString()
-                        : $date->toDateString(),
+                    'date' => $paymentDate,
                     'method' => $payment['method'] ?? 'cash',
                     'reference' => $payment['reference'] ?? null,
                     'note' => null,
                     'user_id' => $user->getKey(),
                 ]);
+
+                $this->cashBook->recordOut(
+                    CashSourceType::SupplierPayment,
+                    $createdPayment->getKey(),
+                    (float) $createdPayment->amount,
+                    $user,
+                    [
+                        'date' => $paymentDate,
+                        'method' => $createdPayment->method->value,
+                        'reference' => $createdPayment->reference,
+                        'note' => "Purchase {$purchase->purchase_no}",
+                    ],
+                );
             }
 
             $purchase->update([
@@ -270,6 +288,19 @@ class PurchaseService
                 'note' => $data['note'] ?? null,
                 'user_id' => $user->getKey(),
             ]);
+
+            $this->cashBook->recordOut(
+                CashSourceType::SupplierPayment,
+                $payment->getKey(),
+                (float) $payment->amount,
+                $user,
+                [
+                    'date' => $payment->date->toDateString(),
+                    'method' => $payment->method->value,
+                    'reference' => $payment->reference,
+                    'note' => $data['note'] ?? "Payment to {$supplier->name}",
+                ],
+            );
 
             if ($purchase !== null) {
                 $paidCents = $this->toCents((float) $purchase->paid) + $amountCents;

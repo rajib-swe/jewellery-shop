@@ -10,9 +10,15 @@ const route = useRoute()
 const router = useRouter()
 const errorMessage = ref('')
 
+const appElement = document.getElementById('app')
+const localDefaults = {
+    email: appElement?.dataset.localLoginEmail ?? '',
+    password: appElement?.dataset.localLoginPassword ?? '',
+}
+
 const form = reactive({
-    email: '',
-    password: '',
+    email: localDefaults.email,
+    password: localDefaults.password,
     remember: false,
 })
 

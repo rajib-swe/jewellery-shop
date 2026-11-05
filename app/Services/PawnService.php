@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\CashSourceType;
 use App\ItemStatus;
 use App\MakingType;
 use App\Models\Category;
@@ -9,6 +10,7 @@ use App\Models\Pawn;
 use App\Models\User;
 use App\PawnPaymentType;
 use App\PawnStatus;
+use App\Support\WeightPoints;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,6 +29,7 @@ class PawnService
         private readonly StockService $stock,
         private readonly SettingsService $settings,
         private readonly InvoiceNumberService $invoiceNumbers,
+        private readonly CashBookService $cashBook,
     ) {}
 
     /**
@@ -156,8 +159,13 @@ class PawnService
                 ]);
 
                 foreach ($items as $index => $item) {
-                    $grossWeight = (float) $item['gross_weight'];
-                    $stoneWeight = (float) ($item['stone_weight'] ?? 0);
+                    $grossWeight = isset($item['gross_weight_points']) && (int) $item['gross_weight_points'] > 0
+                        ? (float) WeightPoints::toGrams((int) $item['gross_weight_points'])
+                        : (float) $item['gross_weight'];
+                    $hasStonePoints = array_key_exists('stone_weight_points', $item) && $item['stone_weight_points'] !== null && $item['stone_weight_points'] !== '';
+                    $stoneWeight = $hasStonePoints
+                        ? (float) WeightPoints::toGrams((int) $item['stone_weight_points'])
+                        : (float) ($item['stone_weight'] ?? 0);
 
                     if ($stoneWeight < 0 || $stoneWeight > $grossWeight) {
                         throw ValidationException::withMessages([
@@ -168,14 +176,35 @@ class PawnService
                     $pawn->items()->create([
                         'description' => $item['description'],
                         'karat' => (int) $item['karat'],
-                        'gross_weight' => number_format($grossWeight, 3, '.', ''),
-                        'stone_weight' => number_format($stoneWeight, 3, '.', ''),
-                        'net_weight' => number_format($grossWeight - $stoneWeight, 3, '.', ''),
+                        'gross_weight_points' => isset($item['gross_weight_points']) && (int) $item['gross_weight_points'] > 0
+                            ? (int) $item['gross_weight_points']
+                            : WeightPoints::fromGrams($grossWeight),
+                        'stone_weight_points' => $hasStonePoints
+                            ? (int) $item['stone_weight_points']
+                            : WeightPoints::fromGrams($stoneWeight),
+                        'net_weight_points' => (isset($item['gross_weight_points']) && (int) $item['gross_weight_points'] > 0
+                            ? (int) $item['gross_weight_points']
+                            : WeightPoints::fromGrams($grossWeight))
+                            - ($hasStonePoints ? (int) $item['stone_weight_points'] : WeightPoints::fromGrams($stoneWeight)),
                         'estimated_value' => $this->fromCents($this->toCents((float) $item['estimated_value'])),
                         'photo' => $storedPhotos[$index] ?? null,
                         'category_id' => $item['category_id'] ?? null,
                     ]);
                 }
+
+                // The principal leaves the shop as cash the moment the pawn is
+                // taken, so it is booked out against the account it funds.
+                $this->cashBook->recordOut(
+                    CashSourceType::PawnDisbursement,
+                    $pawn->getKey(),
+                    (float) $pawn->principal,
+                    $user,
+                    [
+                        'date' => $pawn->date->toDateString(),
+                        'method' => 'cash',
+                        'note' => "Pawn disbursement {$pawn->pawn_no}",
+                    ],
+                );
 
                 return $this->withDetails($pawn);
             });
@@ -229,7 +258,7 @@ class PawnService
             $principalShare = $amountCents - $interestShare;
 
             foreach ($this->shares($interestShare, $principalShare) as $share) {
-                $lockedPawn->payments()->create([
+                $createdPayment = $lockedPawn->payments()->create([
                     ...$share,
                     'date' => $date->toDateString(),
                     'method' => $data['method'] ?? 'cash',
@@ -237,6 +266,19 @@ class PawnService
                     'note' => $data['note'] ?? null,
                     'user_id' => $user->getKey(),
                 ]);
+
+                $this->cashBook->recordIn(
+                    CashSourceType::PawnPayment,
+                    $createdPayment->getKey(),
+                    (float) $createdPayment->amount,
+                    $user,
+                    [
+                        'date' => $createdPayment->date->toDateString(),
+                        'method' => $createdPayment->method->value,
+                        'reference' => $createdPayment->reference,
+                        'note' => "Pawn {$lockedPawn->pawn_no} collection",
+                    ],
+                );
             }
 
             return $this->withDetails($lockedPawn);
@@ -278,7 +320,7 @@ class PawnService
                 ]);
             }
 
-            $lockedPawn->payments()->create([
+            $redeemPayment = $lockedPawn->payments()->create([
                 'type' => PawnPaymentType::Redeem,
                 'amount' => $this->fromCents($amountCents),
                 'date' => $date->toDateString(),
@@ -287,6 +329,19 @@ class PawnService
                 'note' => $data['note'] ?? null,
                 'user_id' => $user->getKey(),
             ]);
+
+            $this->cashBook->recordIn(
+                CashSourceType::PawnPayment,
+                $redeemPayment->getKey(),
+                (float) $redeemPayment->amount,
+                $user,
+                [
+                    'date' => $redeemPayment->date->toDateString(),
+                    'method' => $redeemPayment->method->value,
+                    'reference' => $redeemPayment->reference,
+                    'note' => "Pawn {$lockedPawn->pawn_no} redemption",
+                ],
+            );
 
             $lockedPawn->update([
                 'status' => PawnStatus::Redeemed,
@@ -322,7 +377,7 @@ class PawnService
             $interestDueCents = $this->toCents($summary['interest_due']);
 
             if ($interestDueCents > 0) {
-                $lockedPawn->payments()->create([
+                $renewalPayment = $lockedPawn->payments()->create([
                     'type' => PawnPaymentType::Interest,
                     'amount' => $this->fromCents($interestDueCents),
                     'date' => $date->toDateString(),
@@ -330,6 +385,18 @@ class PawnService
                     'note' => 'Interest settled on renewal',
                     'user_id' => $user->getKey(),
                 ]);
+
+                $this->cashBook->recordIn(
+                    CashSourceType::PawnPayment,
+                    $renewalPayment->getKey(),
+                    (float) $renewalPayment->amount,
+                    $user,
+                    [
+                        'date' => $renewalPayment->date->toDateString(),
+                        'method' => 'cash',
+                        'note' => "Pawn {$lockedPawn->pawn_no} interest on renewal",
+                    ],
+                );
             }
 
             $termDays = max(1, (int) ($data['term_days'] ?? $this->settings->all()['pawn_term_days']));

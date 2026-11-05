@@ -33,6 +33,7 @@ class StoreSaleRequest extends FormRequest
             'items.*.name' => ['nullable', 'string', 'max:255'],
             'items.*.karat' => ['nullable', 'integer', Rule::enum(Karat::class)],
             'items.*.weight' => ['nullable', 'numeric', 'decimal:0,3', 'gt:0', 'max:99999999.999'],
+            'items.*.weight_points' => ['nullable', 'integer', 'gt:0', 'max:999999999999'],
             'items.*.rate' => ['sometimes', 'nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:99999999.99'],
             'items.*.making_type' => ['sometimes', 'nullable', 'string', Rule::enum(MakingType::class)],
             'items.*.making_value' => ['sometimes', 'nullable', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999.99'],
@@ -44,7 +45,8 @@ class StoreSaleRequest extends FormRequest
             'exchanges' => ['sometimes', 'array', 'max:20'],
             'exchanges.*.description' => ['required', 'string', 'max:255'],
             'exchanges.*.karat' => ['required', 'integer', Rule::enum(Karat::class)],
-            'exchanges.*.weight' => ['required', 'numeric', 'decimal:0,3', 'gt:0', 'max:99999999.999'],
+            'exchanges.*.weight' => ['nullable', 'numeric', 'decimal:0,3', 'gt:0', 'max:99999999.999'],
+            'exchanges.*.weight_points' => ['nullable', 'integer', 'gt:0', 'max:999999999999'],
             'exchanges.*.rate' => ['sometimes', 'nullable', 'numeric', 'decimal:0,2', 'gt:0', 'max:99999999.99'],
             'exchanges.*.category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('categories', 'id')],
         ];
@@ -74,7 +76,10 @@ class StoreSaleRequest extends FormRequest
                         $validator->errors()->add("items.{$index}.karat", 'A hand-written line needs a karat.');
                     }
 
-                    if (! isset($line['weight']) || (float) $line['weight'] <= 0) {
+                    $hasWeight = (isset($line['weight']) && (float) $line['weight'] > 0)
+                        || (isset($line['weight_points']) && (int) $line['weight_points'] > 0);
+
+                    if (! $hasWeight) {
                         $validator->errors()->add("items.{$index}.weight", 'A hand-written line needs a weight greater than zero.');
                     }
 

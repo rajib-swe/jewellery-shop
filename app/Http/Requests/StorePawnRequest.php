@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Karat;
 use App\PawnInterestType;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -30,8 +31,10 @@ class StorePawnRequest extends FormRequest
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.description' => ['required', 'string', 'max:255'],
             'items.*.karat' => ['required', 'integer', Rule::enum(Karat::class)],
-            'items.*.gross_weight' => ['required', 'numeric', 'decimal:0,3', 'gt:0', 'max:99999999.999'],
+            'items.*.gross_weight' => ['nullable', 'numeric', 'decimal:0,3', 'gt:0', 'max:99999999.999'],
             'items.*.stone_weight' => ['sometimes', 'nullable', 'numeric', 'decimal:0,3', 'min:0', 'max:99999999.999'],
+            'items.*.gross_weight_points' => ['nullable', 'integer', 'gt:0', 'max:999999999999'],
+            'items.*.stone_weight_points' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:999999999999'],
             'items.*.estimated_value' => ['required', 'numeric', 'decimal:0,2', 'gt:0', 'max:9999999999.99'],
             'items.*.category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('categories', 'id')],
             'items.*.photo' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -43,5 +46,23 @@ class StorePawnRequest extends FormRequest
         return [
             'items.required' => 'A pawn needs at least one pledged item.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            foreach ((array) $this->input('items', []) as $index => $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $hasGross = (isset($item['gross_weight']) && (float) $item['gross_weight'] > 0)
+                    || (isset($item['gross_weight_points']) && (int) $item['gross_weight_points'] > 0);
+
+                if (! $hasGross) {
+                    $validator->errors()->add("items.{$index}.gross_weight", 'A gross weight is required.');
+                }
+            }
+        });
     }
 }

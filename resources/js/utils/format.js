@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useLocaleStore } from '../stores/locale'
 import { useSettingsStore } from '../stores/settings'
-import { gramsToTraditional } from './weight'
+import { gramsToAna, gramsToPoint, gramsToRoti, gramsToVori } from './weight'
 
 export function useCurrency() {
     const settingsStore = useSettingsStore()
@@ -32,11 +32,18 @@ export function useWeightFormatter() {
     function formatWeight(grams) {
         const value = Number(grams || 0)
 
-        if (weightUnit.value === 'vori') {
-            return `${gramsToTraditional(value).vori.toFixed(4)} ${weightSuffix()}`
+        switch (weightUnit.value) {
+            case 'vori':
+                return `${gramsToVori(value).toFixed(4)} ${weightSuffix()}`
+            case 'ana':
+                return `${gramsToAna(value).toFixed(2)} ${weightSuffix()}`
+            case 'roti':
+                return `${gramsToRoti(value).toFixed(3)} ${weightSuffix()}`
+            case 'point':
+                return `${gramsToPoint(value).toFixed(1)} ${weightSuffix()}`
+            default:
+                return `${value.toFixed(3)} ${localeStore.t('units.gram')}`
         }
-
-        return `${value.toFixed(3)} ${weightSuffix()}`
     }
 
     function formatMoney(value) {

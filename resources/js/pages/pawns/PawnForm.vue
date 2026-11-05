@@ -7,6 +7,8 @@ import { useLocaleStore } from '../../stores/locale'
 import { usePawnsStore } from '../../stores/pawns'
 import { useSettingsStore } from '../../stores/settings'
 import { useCurrency, useWeightFormatter } from '../../utils/format'
+import { pointsFromParts, pointsToGrams } from '../../utils/weight'
+import WeightPointsInput from '../../components/WeightPointsInput.vue'
 
 const router = useRouter()
 const localeStore = useLocaleStore()
@@ -33,8 +35,8 @@ function blankItem() {
     return {
         description: '',
         karat: 22,
-        gross_weight: '',
-        stone_weight: '0.000',
+        grossParts: { vori: '', ana: '', roti: '', point: '' },
+        stoneParts: { vori: '', ana: '', roti: '', point: '' },
         estimated_value: '',
         category_id: null,
     }
@@ -55,7 +57,7 @@ const loanToValue = computed(() => {
     return (Number(form.principal || 0) / pledgedValue.value * 100).toFixed(2)
 })
 const totalNetWeight = computed(() => form.items.reduce(
-    (total, item) => total + Math.max(0, (Number(item.gross_weight) || 0) - (Number(item.stone_weight) || 0)),
+    (total, item) => total + Math.max(0, pointsToGrams(pointsFromParts(item.grossParts)) - pointsToGrams(pointsFromParts(item.stoneParts))),
     0,
 ))
 
@@ -106,7 +108,7 @@ function validate() {
         return localeStore.t('pawns.needOneItem')
     }
 
-    if (form.items.some((item) => !item.description.trim() || !(Number(item.gross_weight) > 0))) {
+    if (form.items.some((item) => !item.description.trim() || !(pointsFromParts(item.grossParts) > 0))) {
         return localeStore.t('pawns.descriptionRequired')
     }
 
@@ -137,8 +139,8 @@ async function submit() {
     form.items.forEach((item, index) => {
         payload.append(`items[${index}][description]`, item.description.trim())
         payload.append(`items[${index}][karat]`, String(item.karat))
-        payload.append(`items[${index}][gross_weight]`, Number(item.gross_weight).toFixed(3))
-        payload.append(`items[${index}][stone_weight]`, Number(item.stone_weight || 0).toFixed(3))
+        payload.append(`items[${index}][gross_weight_points]`, String(pointsFromParts(item.grossParts)))
+        payload.append(`items[${index}][stone_weight_points]`, String(pointsFromParts(item.stoneParts)))
         payload.append(`items[${index}][estimated_value]`, Number(item.estimated_value || 0).toFixed(2))
 
         if (item.category_id) {
@@ -283,93 +285,81 @@ onMounted(load)
                             </v-btn>
                         </v-card-title>
                         <v-card-text>
-                            <v-table density="comfortable">
-                                <thead>
-                                    <tr>
-                                        <th>{{ $t('pawns.itemDescription') }}</th>
-                                        <th style="width: 120px">{{ $t('inventory.karat') }}</th>
-                                        <th style="width: 150px">{{ $t('inventory.grossWeight') }}</th>
-                                        <th style="width: 150px">{{ $t('inventory.stoneWeight') }}</th>
-                                        <th style="width: 160px">{{ $t('pawns.estimatedValue') }}</th>
-                                        <th style="width: 190px">{{ $t('inventory.category') }}</th>
-                                        <th style="width: 60px" />
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(item, index) in form.items" :key="index">
-                                        <td>
-                                            <v-text-field
-                                                v-model="item.description"
-                                                :label="$t('pawns.itemDescription')"
-                                                density="compact"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-select
-                                                v-model="item.karat"
-                                                :items="karatOptions"
-                                                density="compact"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-text-field
-                                                v-model="item.gross_weight"
-                                                density="compact"
-                                                min="0.001"
-                                                step="0.001"
-                                                type="number"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-text-field
-                                                v-model="item.stone_weight"
-                                                density="compact"
-                                                min="0"
-                                                step="0.001"
-                                                type="number"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-text-field
-                                                v-model="item.estimated_value"
-                                                density="compact"
-                                                min="0.01"
-                                                step="0.01"
-                                                :suffix="currencySymbol"
-                                                type="number"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-select
-                                                v-model="item.category_id"
-                                                clearable
-                                                density="compact"
-                                                :items="categories"
-                                                item-title="name"
-                                                item-value="id"
-                                                :label="$t('inventory.selectCategory')"
-                                                variant="outlined"
-                                            />
-                                        </td>
-                                        <td>
-                                            <v-btn
-                                                :aria-label="$t('pawns.removeItem')"
-                                                color="error"
-                                                density="compact"
-                                                icon="mdi-delete-outline"
-                                                size="small"
-                                                variant="text"
-                                                @click="removeItem(index)"
-                                            />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </v-table>
+                            <div class="pawn-items-scroll">
+                                <v-table density="comfortable">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 260px">{{ $t('pawns.itemDescription') }}</th>
+                                            <th style="width: 120px">{{ $t('inventory.karat') }}</th>
+                                            <th style="width: 150px">{{ $t('inventory.grossWeight') }}</th>
+                                            <th style="width: 150px">{{ $t('inventory.stoneWeight') }}</th>
+                                            <th style="width: 160px">{{ $t('pawns.estimatedValue') }}</th>
+                                            <th style="width: 190px">{{ $t('inventory.category') }}</th>
+                                            <th style="width: 60px" />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(item, index) in form.items" :key="index">
+                                            <td>
+                                                <v-text-field
+                                                    v-model="item.description"
+                                                    :label="$t('pawns.itemDescription')"
+                                                    density="compact"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-select
+                                                    v-model="item.karat"
+                                                    :items="karatOptions"
+                                                    density="compact"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <WeightPointsInput v-model="item.grossParts" />
+                                            </td>
+                                            <td>
+                                                <WeightPointsInput v-model="item.stoneParts" />
+                                            </td>
+                                            <td>
+                                                <v-text-field
+                                                    v-model="item.estimated_value"
+                                                    density="compact"
+                                                    min="0.01"
+                                                    step="0.01"
+                                                    :suffix="currencySymbol"
+                                                    type="number"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-select
+                                                    v-model="item.category_id"
+                                                    clearable
+                                                    density="compact"
+                                                    :items="categories"
+                                                    item-title="name"
+                                                    item-value="id"
+                                                    :label="$t('inventory.selectCategory')"
+                                                    variant="outlined"
+                                                />
+                                            </td>
+                                            <td>
+                                                <v-btn
+                                                    :aria-label="$t('pawns.removeItem')"
+                                                    color="error"
+                                                    density="compact"
+                                                    icon="mdi-delete-outline"
+                                                    size="small"
+                                                    variant="text"
+                                                    @click="removeItem(index)"
+                                                />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
+                            </div>
 
                             <v-alert
                                 v-if="!form.items.length"
@@ -448,3 +438,29 @@ onMounted(load)
         </v-row>
     </v-container>
 </template>
+
+<style scoped>
+/* The pledged item grid carries seven inputs per row. `table-layout: auto` lets
+   the browser negotiate the declared column widths against each cell's
+   min-content, which collapses the description column and leaves Vuetify
+   ellipsizing the karat and weight values. A fixed layout honours the widths
+   as written, and the floor plus scroll keeps them usable on narrow screens. */
+.pawn-items-scroll {
+    overflow-x: auto;
+
+    table {
+        min-width: 1080px;
+        table-layout: fixed;
+    }
+
+    :deep(.v-field) {
+        /* Fixed layout hands each cell a hard width; without this the outlined
+           field can still be clipped rather than ellipsized. */
+        min-width: 0;
+    }
+
+    :deep(.v-field__input) {
+        min-width: 0;
+    }
+}
+</style>

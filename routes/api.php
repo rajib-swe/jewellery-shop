@@ -1,28 +1,37 @@
 <?php
 
+use App\Http\Controllers\Api\V1\ActivityLogController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BackupController;
+use App\Http\Controllers\Api\V1\CashBookController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\DailyClosingController;
+use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\GoldRateController;
 use App\Http\Controllers\Api\V1\ItemController;
 use App\Http\Controllers\Api\V1\PawnController;
 use App\Http\Controllers\Api\V1\PurchaseController;
+use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ReportExportController;
+use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\StockController;
 use App\Http\Controllers\Api\V1\SupplierController;
+use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:login')
         ->name('api.v1.login');
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.v1.logout');
     });
 
-    Route::middleware(['auth:sanctum', 'permission:access api'])->group(function (): void {
+    Route::middleware(['auth:sanctum', 'permission:access api', 'throttle:api'])->group(function (): void {
         Route::get('/me', [AuthController::class, 'me'])->name('api.v1.me');
 
         Route::get('/settings', [SettingsController::class, 'show'])
@@ -180,5 +189,128 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/purchases/{purchase}', [PurchaseController::class, 'show'])
             ->middleware('permission:view purchases')
             ->name('api.v1.purchases.show');
+
+        Route::get('/reports/dashboard', [ReportController::class, 'dashboard'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.dashboard');
+        Route::get('/reports/sales-trend', [ReportController::class, 'salesTrend'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.sales-trend');
+        Route::get('/reports/sales', [ReportController::class, 'sales'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.sales');
+        Route::get('/reports/stock', [ReportController::class, 'stock'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.stock');
+        Route::get('/reports/pawn-outstanding', [ReportController::class, 'pawnOutstanding'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.pawn-outstanding');
+        Route::get('/reports/overdue-pawns', [ReportController::class, 'overduePawns'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.overdue-pawns');
+        Route::get('/reports/interest-earned', [ReportController::class, 'interestEarned'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.interest-earned');
+        Route::get('/reports/customers/{customer}/ledger', [ReportController::class, 'customerLedger'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.customer-ledger');
+        Route::get('/reports/suppliers/{supplier}/ledger', [ReportController::class, 'supplierLedger'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.supplier-ledger');
+        Route::get('/reports/profit', [ReportController::class, 'profitSummary'])
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.profit');
+
+        Route::get('/reports/{report}/export', ReportExportController::class)
+            ->middleware('permission:view reports')
+            ->name('api.v1.reports.export');
+
+        Route::get('/expenses', [ExpenseController::class, 'index'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.expenses.index');
+        Route::post('/expenses', [ExpenseController::class, 'store'])
+            ->middleware('permission:manage accounts')
+            ->name('api.v1.expenses.store');
+        Route::get('/expenses/{expense}', [ExpenseController::class, 'show'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.expenses.show');
+        Route::match(['put', 'patch'], '/expenses/{expense}', [ExpenseController::class, 'update'])
+            ->middleware('permission:manage accounts')
+            ->name('api.v1.expenses.update');
+        Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])
+            ->middleware('permission:manage accounts')
+            ->name('api.v1.expenses.destroy');
+
+        Route::get('/cash-book', [CashBookController::class, 'index'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.cash-book.index');
+        Route::get('/cash-book/summary', [CashBookController::class, 'summary'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.cash-book.summary');
+        Route::post('/cash-book', [CashBookController::class, 'store'])
+            ->middleware('permission:manage accounts')
+            ->name('api.v1.cash-book.store');
+
+        Route::get('/daily-closings', [DailyClosingController::class, 'index'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.daily-closings.index');
+        Route::get('/daily-closings/show', [DailyClosingController::class, 'show'])
+            ->middleware('permission:view accounts')
+            ->name('api.v1.daily-closings.show');
+        Route::post('/daily-closings', [DailyClosingController::class, 'store'])
+            ->middleware('permission:close accounts')
+            ->name('api.v1.daily-closings.store');
+        Route::post('/daily-closings/{closing}/reopen', [DailyClosingController::class, 'reopen'])
+            ->middleware('permission:close accounts')
+            ->name('api.v1.daily-closings.reopen');
+
+        Route::get('/users', [UserController::class, 'index'])
+            ->middleware('permission:view users')
+            ->name('api.v1.users.index');
+        Route::post('/users', [UserController::class, 'store'])
+            ->middleware('permission:manage users')
+            ->name('api.v1.users.store');
+        Route::get('/users/{user}', [UserController::class, 'show'])
+            ->middleware('permission:view users')
+            ->name('api.v1.users.show');
+        Route::match(['put', 'patch'], '/users/{user}', [UserController::class, 'update'])
+            ->middleware('permission:manage users')
+            ->name('api.v1.users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])
+            ->middleware('permission:manage users')
+            ->name('api.v1.users.destroy');
+
+        Route::get('/roles', [RoleController::class, 'index'])
+            ->middleware('permission:view roles')
+            ->name('api.v1.roles.index');
+        Route::get('/permissions', [RoleController::class, 'permissions'])
+            ->middleware('permission:view roles')
+            ->name('api.v1.permissions.index');
+        Route::put('/roles/{role}', [RoleController::class, 'update'])
+            ->middleware('permission:manage roles')
+            ->name('api.v1.roles.update');
+
+        Route::get('/activity-log', [ActivityLogController::class, 'index'])
+            ->middleware('permission:view activity log')
+            ->name('api.v1.activity-log.index');
+        Route::get('/activity-log/filters', [ActivityLogController::class, 'filters'])
+            ->middleware('permission:view activity log')
+            ->name('api.v1.activity-log.filters');
+
+        Route::get('/backups', [BackupController::class, 'index'])
+            ->middleware('permission:manage backups')
+            ->name('api.v1.backups.index');
+        Route::post('/backups', [BackupController::class, 'store'])
+            ->middleware(['permission:manage backups', 'throttle:backups'])
+            ->name('api.v1.backups.store');
+        Route::get('/backups/{name}/download', [BackupController::class, 'download'])
+            ->middleware('permission:manage backups')
+            ->name('api.v1.backups.download')
+            // The filename ends in .sql.gz, so the parameter has to be allowed
+            // to span a dot.
+            ->where('name', '[A-Za-z0-9_\-.]+');
+        Route::delete('/backups/{name}', [BackupController::class, 'destroy'])
+            ->middleware('permission:manage backups')
+            ->name('api.v1.backups.destroy');
     });
 });

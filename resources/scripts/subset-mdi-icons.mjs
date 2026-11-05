@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import subsetFont from 'subset-font'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const sourceDir = join(root, 'resources/js')
@@ -75,18 +75,17 @@ if (missing.length > 0) {
     throw new Error(`Unknown MDI icons (not in ${relative(root, mdiCss)}):\n  ${missing.join('\n  ')}`)
 }
 
-const unicodes = icons.map((icon) => `U+${map.get(icon).toString(16).toUpperCase()}`).join(',')
+const characters = icons.map((icon) => String.fromCodePoint(map.get(icon))).join('')
 
-execFileSync('python', [
-    '-m', 'fontTools.subset', mdiTtf,
-    `--unicodes=${unicodes}`,
-    '--flavor=woff2',
-    '--layout-features=',
-    '--no-hinting',
-    '--desubroutinize',
-    '--name-IDs=',
-    '--output-file=' + outFont,
-], { stdio: 'inherit' })
+// subset-font is the wasm build of harfbuzz subset, so the script needs no
+// Python or fontTools install step on the machine that runs it.
+const subset = await subsetFont(readFileSync(mdiTtf), characters, {
+    targetFormat: 'woff2',
+    keepFeatures: [],
+    noHinting: true,
+})
+
+writeFileSync(outFont, subset)
 
 const rules = icons
     .map((icon) => `.${icon}::before {\n  content: "\\${map.get(icon).toString(16).toUpperCase()}";\n}`)

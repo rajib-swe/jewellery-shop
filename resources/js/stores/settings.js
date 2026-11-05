@@ -10,7 +10,7 @@ const defaultSettings = {
     shop_logo_url: null,
     vat_percentage: '0.00',
     currency_symbol: '৳',
-    weight_unit: 'gram',
+    weight_unit: 'vori',
     default_pawn_interest_rate: '0.00',
     invoice_footer: '',
     invoice_template: 'demo2',

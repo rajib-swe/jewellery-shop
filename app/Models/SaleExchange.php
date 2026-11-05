@@ -2,16 +2,22 @@
 
 namespace App\Models;
 
+use App\Support\WeightPoints;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-#[Fillable(['sale_id', 'description', 'karat', 'weight', 'rate', 'amount', 'item_id'])]
+#[Fillable(['sale_id', 'description', 'karat', 'weight_points', 'rate', 'amount', 'item_id'])]
 class SaleExchange extends Model
 {
     use LogsActivity;
+
+    public function getWeightAttribute(): string
+    {
+        return WeightPoints::toGrams($this->attributes['weight_points'] ?? null);
+    }
 
     public function sale(): BelongsTo
     {
@@ -27,7 +33,7 @@ class SaleExchange extends Model
     {
         return LogOptions::defaults()
             ->useLogName('sale-exchanges')
-            ->logOnly(['sale_id', 'description', 'karat', 'weight', 'rate', 'amount', 'item_id'])
+            ->logOnly(['sale_id', 'description', 'karat', 'weight_points', 'rate', 'amount', 'item_id'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -36,7 +42,7 @@ class SaleExchange extends Model
     {
         return [
             'karat' => 'integer',
-            'weight' => 'decimal:3',
+            'weight_points' => 'integer',
             'rate' => 'decimal:2',
             'amount' => 'decimal:2',
         ];
