@@ -29,7 +29,8 @@ class GoldApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      darkTheme: AppTheme.light,
+      themeMode: ThemeMode.light,
       routerConfig: ref.watch(routerProvider),
     );
   }

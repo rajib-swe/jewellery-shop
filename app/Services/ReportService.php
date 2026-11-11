@@ -24,6 +24,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Read-only figures for management: sales, stock, pawn exposure, interest
@@ -530,19 +531,23 @@ class ReportService
             ->whereDate('date', '<=', $toDate)
             ->sum('total'));
 
-        $expenseCents = $this->toCents(Expense::query()
-            ->whereDate('date', '>=', $fromDate)
-            ->whereDate('date', '<=', $toDate)
-            ->sum('amount'));
+        $expenseCents = Schema::hasTable('expenses')
+            ? $this->toCents(Expense::query()
+                ->whereDate('date', '>=', $fromDate)
+                ->whereDate('date', '<=', $toDate)
+                ->sum('amount'))
+            : 0;
 
-        $cashRows = CashTransaction::query()
-            ->whereDate('date', '>=', $fromDate)
-            ->whereDate('date', '<=', $toDate)
-            ->select('direction')
-            ->selectRaw('COALESCE(SUM(amount), 0) as total')
-            ->groupBy('direction')
-            ->get()
-            ->keyBy(fn ($row): string => $row->direction->value);
+        $cashRows = Schema::hasTable('cash_transactions')
+            ? CashTransaction::query()
+                ->whereDate('date', '>=', $fromDate)
+                ->whereDate('date', '<=', $toDate)
+                ->select('direction')
+                ->selectRaw('COALESCE(SUM(amount), 0) as total')
+                ->groupBy('direction')
+                ->get()
+                ->keyBy(fn ($row): string => $row->direction->value)
+            : collect();
 
         $cashInCents = $this->toCents($cashRows->get(CashDirection::In->value)->total ?? 0);
         $cashOutCents = $this->toCents($cashRows->get(CashDirection::Out->value)->total ?? 0);

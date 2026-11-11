@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\StockController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\UserController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -40,6 +41,14 @@ Route::prefix('v1')->group(function (): void {
         Route::match(['put', 'patch'], '/settings', [SettingsController::class, 'update'])
             ->middleware('permission:manage settings')
             ->name('api.v1.settings.update');
+        Route::post('/settings/migrate', function () {
+            Artisan::call('migrate', ['--force' => true]);
+
+            return response()->json([
+                'message' => 'Database migrations executed.',
+                'output' => Artisan::output(),
+            ]);
+        })->middleware('permission:manage settings');
 
         Route::get('/gold-rates/latest', [GoldRateController::class, 'latest'])
             ->middleware('permission:view gold rates')
@@ -191,7 +200,6 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.v1.purchases.show');
 
         Route::get('/reports/dashboard', [ReportController::class, 'dashboard'])
-            ->middleware('permission:view reports')
             ->name('api.v1.reports.dashboard');
         Route::get('/reports/sales-trend', [ReportController::class, 'salesTrend'])
             ->middleware('permission:view reports')

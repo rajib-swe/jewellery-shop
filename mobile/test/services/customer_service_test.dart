@@ -160,4 +160,29 @@ void main() {
       expect(error.statusCode, 404);
     }
   });
+
+  test('create posts customer fields and parses response', () async {
+    final adapter = FakeHttpClientAdapter(
+      (_) async => FakeHttpClientAdapter.json({'data': _customerJson}),
+    );
+    final service = buildService(adapter);
+
+    final customer = await service.create(
+      name: 'Rezaul Karim',
+      phone: '01700000000',
+      openingBalance: 250,
+      address: 'Dhaka',
+      nid: '1234567890',
+      notes: 'VIP',
+    );
+
+    expect(customer.name, 'Rezaul Karim');
+    expect(customer.phone, '01700000000');
+    expect(adapter.requests.single.method, 'POST');
+    expect(adapter.requests.single.path, '/customers');
+    final body = adapter.requests.single.data as Map<String, dynamic>;
+    expect(body['name'], 'Rezaul Karim');
+    expect(body['phone'], '01700000000');
+    expect(body['opening_balance'], 250);
+  });
 }

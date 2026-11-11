@@ -57,4 +57,29 @@ class CustomerService {
 
     return CustomerHistory.fromJson(dataMap(response.data));
   }
+
+  Future<Customer> create({
+    required String name,
+    required String phone,
+    double openingBalance = 0,
+    String? address,
+    String? nid,
+    String? notes,
+  }) async {
+    final response = await ApiException.guard(
+      () => dio.post<Object?>(
+        Endpoints.customers,
+        data: {
+          'name': name.trim(),
+          'phone': phone.trim(),
+          'opening_balance': openingBalance,
+          if (address != null && address.trim().isNotEmpty) 'address': address.trim(),
+          if (nid != null && nid.trim().isNotEmpty) 'nid': nid.trim(),
+          if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+        },
+      ),
+    );
+
+    return Customer.fromJson(dataMap(response.data));
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api/api_exception.dart';
 import '../../core/utils/format.dart';
 import '../../models/dashboard_summary.dart';
 import '../../models/gold_rate.dart';
@@ -71,10 +72,19 @@ class DashboardScreen extends ConsumerWidget {
         child: dashboard.when(
           loading: () =>
               StateHandlerView.loading(message: 'আজকের হিসাব লোড হচ্ছে…'),
-          error: (error, _) => StateHandlerView.error(
-            message: error.toString(),
-            onRetry: () => _refresh(ref),
-          ),
+          error: (error, _) {
+            final raw = error is ApiException ? error.message : error.toString();
+            final message = raw.contains('right permissions')
+                ? 'আপনার অ্যাকাউন্টে ড্যাশবোর্ড দেখার অনুমতি নেই। অনুগ্রহ করে অ্যাডমিনের সাথে যোগাযোগ করুন।'
+                : (raw.contains('No connection')
+                    ? 'ইন্টারনেট সংযোগ নেই। নেটওয়ার্ক পরীক্ষা করে আবার চেষ্টা করুন।'
+                    : raw);
+
+            return StateHandlerView.error(
+              message: message,
+              onRetry: () => _refresh(ref),
+            );
+          },
           data: (summary) => ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),

@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/utils/format.dart';
 import '../../models/customer.dart';
 import '../../providers/customers_provider.dart';
+import '../../widgets/customer_form_sheet.dart';
 import '../../widgets/state_handler.dart';
 
 class CustomersScreen extends ConsumerStatefulWidget {
@@ -55,12 +57,34 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     });
   }
 
+  Future<void> _openAddCustomer() async {
+    final newCust = await showCustomerFormSheet(context);
+    if (newCust != null && mounted) {
+      ref.read(customersControllerProvider.notifier).refresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('গ্রাহক "${newCust.name}" সফলভাবে যুক্ত করা হয়েছে।'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final customers = ref.watch(customersControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('গ্রাহক')),
+      appBar: AppBar(
+        title: const Text('গ্রাহক তালিকা'),
+        actions: [
+          IconButton(
+            tooltip: 'নতুন গ্রাহক যোগ করুন',
+            icon: const Icon(Icons.person_add_outlined),
+            onPressed: _openAddCustomer,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -69,8 +93,9 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               controller: _searchController,
               textInputAction: TextInputAction.search,
               onChanged: _onSearchChanged,
+              style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
-                hintText: 'নাম, মোবাইল, এনআইডি বা কোড খুঁজুন',
+                hintText: 'নাম, মোবাইল, এনআইডি বা কোড খুঁজুন…',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isEmpty
                     ? null
@@ -100,7 +125,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 child: ListView.separated(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
+                  padding: const EdgeInsets.only(bottom: 80),
                   itemCount: page.items.length + (page.hasMore ? 1 : 0),
                   separatorBuilder: (context, index) =>
                       const Divider(height: 1),
@@ -118,13 +143,20 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                       );
                     }
 
-                    return _CustomerTile(customer: page.items[index]);
+                    final customer = page.items[index];
+
+                    return _CustomerTile(customer: customer);
                   },
                 ),
               ),
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openAddCustomer,
+        icon: const Icon(Icons.person_add),
+        label: const Text('নতুন গ্রাহক'),
       ),
     );
   }
@@ -137,13 +169,10 @@ class _CustomerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.14),
-        foregroundColor: theme.colorScheme.primary,
+        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+        foregroundColor: AppColors.primary,
         child: Text(
           customer.initials,
           style: const TextStyle(fontWeight: FontWeight.w700),
@@ -151,14 +180,11 @@ class _CustomerTile extends StatelessWidget {
       ),
       title: Text(
         customer.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w600),
+        style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
       ),
       subtitle: Text(
-        customer.phone.isEmpty ? customer.code : customer.phone,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        customer.phone.isEmpty ? 'ফোন নম্বর নেই' : customer.phone,
+        style: const TextStyle(color: AppColors.inkMuted),
       ),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -166,20 +192,24 @@ class _CustomerTile extends StatelessWidget {
         children: [
           Text(
             customer.code,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.inkMuted,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             formatMoney(customer.openingBalance),
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+              fontSize: 13,
             ),
           ),
         ],
       ),
-      onTap: () => context.go('/customers/${customer.id}'),
+      onTap: () => context.push('/customers/${customer.id}'),
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/format.dart';
 import '../../models/sale.dart';
 import '../../providers/sales_provider.dart';
+import '../../widgets/customer_form_sheet.dart';
 import '../../widgets/customer_picker.dart';
 import '../../widgets/item_picker.dart';
 import 'sale_forms.dart';
@@ -56,6 +57,21 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
   Future<void> _pickCustomer() async {
     final customer = await showCustomerPicker(context);
+
+    if (customer == null) {
+      return;
+    }
+
+    setState(() {
+      _customerId = customer.id;
+      _customerName = customer.name;
+      _customerPhone = customer.phone;
+      _customerCode = customer.code;
+    });
+  }
+
+  Future<void> _addNewCustomer() async {
+    final customer = await showCustomerFormSheet(context);
 
     if (customer == null) {
       return;
@@ -293,6 +309,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
               customerPhone: _customerPhone,
               customerCode: _customerCode,
               onPick: _pickCustomer,
+              onAddNew: _addNewCustomer,
               onClear: _clearCustomer,
             ),
             const SizedBox(height: 24),
@@ -712,6 +729,7 @@ class _CustomerCard extends StatelessWidget {
     required this.customerPhone,
     required this.customerCode,
     required this.onPick,
+    required this.onAddNew,
     required this.onClear,
   });
 
@@ -720,6 +738,7 @@ class _CustomerCard extends StatelessWidget {
   final String? customerPhone;
   final String? customerCode;
   final VoidCallback onPick;
+  final VoidCallback onAddNew;
   final VoidCallback onClear;
 
   @override
@@ -765,13 +784,27 @@ class _CustomerCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                FilledButton.tonal(
-                  onPressed: onPick,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    minimumSize: const Size(0, 36),
-                  ),
-                  child: const Text('গ্রাহক খুঁজুন'),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton(
+                      onPressed: onPick,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        minimumSize: const Size(0, 36),
+                      ),
+                      child: const Text('খুঁজুন'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.tonal(
+                      onPressed: onAddNew,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        minimumSize: const Size(0, 36),
+                      ),
+                      child: const Text('+ নতুন'),
+                    ),
+                  ],
                 ),
               ],
             ),

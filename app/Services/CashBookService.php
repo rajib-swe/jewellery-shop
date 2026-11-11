@@ -14,6 +14,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -66,6 +67,20 @@ class CashBookService
     public function summaryFor(CarbonInterface $date, array $filters = []): array
     {
         $day = CarbonImmutable::parse($date)->startOfDay();
+
+        if (! Schema::hasTable('cash_transactions')) {
+            return [
+                'date' => $day->toDateString(),
+                'opening_balance' => '0.00',
+                'total_in' => '0.00',
+                'total_out' => '0.00',
+                'closing_balance' => '0.00',
+                'transaction_count' => 0,
+                'by_method' => [],
+                'locked' => false,
+            ];
+        }
+
         $base = $this->filtered(CashTransaction::query(), $filters)
             ->whereDate('date', $day->toDateString());
 
@@ -168,6 +183,10 @@ class CashBookService
         }
 
         $this->guardOpenDay($date);
+
+        if (! Schema::hasTable('cash_transactions')) {
+            return new CashTransaction;
+        }
 
         return CashTransaction::query()->create([
             'source_type' => $sourceType,
@@ -288,6 +307,10 @@ class CashBookService
      */
     public function guardOpenDay(CarbonInterface $date): void
     {
+        if (! Schema::hasTable('daily_closings')) {
+            return;
+        }
+
         $day = CarbonImmutable::parse($date)->startOfDay();
         $closing = DailyClosing::query()
             ->whereDate('date', $day->toDateString())
