@@ -92,6 +92,28 @@ class ApiException implements Exception {
     }
   }
 
+  String get userMessage {
+    if (isOffline) {
+      return 'ইন্টারনেট সংযোগ নেই। নেটওয়ার্ক পরীক্ষা করে আবার চেষ্টা করুন।';
+    }
+    if (isUnauthorized) {
+      return 'আপনার সেশনের মেয়াদ শেষ হয়েছে। আবার প্রবেশ করুন।';
+    }
+    if (isForbidden) {
+      return 'আপনার এই কাজের অনুমতি নেই।';
+    }
+    if (statusCode == 404) {
+      return 'তথ্যটি খুঁজে পাওয়া যায়নি।';
+    }
+    if (statusCode != null && statusCode! >= 500) {
+      return 'সার্ভারে সমস্যা দেখা দিয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+    }
+    if (message == 'Something went wrong. Please try again.') {
+      return 'কিছু সমস্যা হয়েছে। আবার চেষ্টা করুন।';
+    }
+    return message;
+  }
+
   static String _defaultMessage(int? statusCode, DioExceptionType type) {
     if (statusCode == null) {
       return switch (type) {

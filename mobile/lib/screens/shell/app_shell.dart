@@ -26,27 +26,27 @@ class AppShell extends StatelessWidget {
             NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
               selectedIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
+              label: 'ড্যাশবোর্ড',
             ),
             NavigationDestination(
               icon: Icon(Icons.point_of_sale_outlined),
               selectedIcon: Icon(Icons.point_of_sale),
-              label: 'Sale',
+              label: 'বিক্রয়',
             ),
             NavigationDestination(
               icon: Icon(Icons.payments_outlined),
               selectedIcon: Icon(Icons.payments),
-              label: 'Pawn',
+              label: 'বন্ধক',
             ),
             NavigationDestination(
               icon: Icon(Icons.people_alt_outlined),
               selectedIcon: Icon(Icons.people_alt),
-              label: 'Customers',
+              label: 'গ্রাহক',
             ),
             NavigationDestination(
               icon: Icon(Icons.more_horiz),
               selectedIcon: Icon(Icons.more_horiz),
-              label: 'More',
+              label: 'মেনু',
             ),
           ],
         ),

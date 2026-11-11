@@ -10,6 +10,7 @@ abstract final class Endpoints {
   static const String latestGoldRates = '/gold-rates/latest';
 
   static const String customers = '/customers';
+  static const String categories = '/categories';
   static const String items = '/items';
   static const String stockSummary = '/stock/summary';
 

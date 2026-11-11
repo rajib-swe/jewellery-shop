@@ -121,7 +121,7 @@ class AuthController extends Notifier<AuthState> {
 
     await _service.forgetToken();
     _emit(
-      const AuthUnauthenticated(reason: 'Your session expired. Please sign in.'),
+      const AuthUnauthenticated(reason: 'আপনার সেশনের মেয়াদ শেষ হয়েছে। আবার প্রবেশ করুন।'),
     );
   }
 

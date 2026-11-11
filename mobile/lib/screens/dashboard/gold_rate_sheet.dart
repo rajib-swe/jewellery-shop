@@ -116,25 +116,25 @@ class _GoldRateSheetState extends ConsumerState<GoldRateSheet> {
                   height: 4,
                   width: 44,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.outline,
+                    color: theme.colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Update gold rate', style: theme.textTheme.titleLarge),
+              Text('স্বর্ণের দাম আপডেট', style: theme.textTheme.titleLarge),
               const SizedBox(height: 4),
               Text(
-                'The shop uses the latest rate entered for each karat.',
+                'দোকানে প্রতিটি ক্যারেটের সর্বশেষ নির্ধারিত দর কার্যকর হবে।',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),
               DropdownButtonFormField<int>(
                 initialValue: _karat,
                 decoration: const InputDecoration(
-                  labelText: 'Karat',
+                  labelText: 'ক্যারেট',
                   prefixIcon: Icon(Icons.workspace_premium_outlined),
                 ),
                 items: [
@@ -154,7 +154,7 @@ class _GoldRateSheetState extends ConsumerState<GoldRateSheet> {
                 ),
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(
-                  labelText: 'Rate per gram',
+                  labelText: 'প্রতি গ্রাম দর',
                   prefixText: '৳ ',
                   prefixIcon: Icon(Icons.payments_outlined),
                 ),
@@ -162,11 +162,11 @@ class _GoldRateSheetState extends ConsumerState<GoldRateSheet> {
                   final rate = double.tryParse(value?.trim() ?? '');
 
                   if (rate == null) {
-                    return 'Enter a valid rate.';
+                    return 'সঠিক দর লিখুন';
                   }
 
                   if (rate <= 0) {
-                    return 'Rate must be greater than zero.';
+                    return 'দর অবশ্যই শূন্যের বেশি হতে হবে';
                   }
 
                   return null;
@@ -178,7 +178,7 @@ class _GoldRateSheetState extends ConsumerState<GoldRateSheet> {
                 onTap: _saving ? null : _pickDate,
                 child: InputDecorator(
                   decoration: const InputDecoration(
-                    labelText: 'Effective date',
+                    labelText: 'কার্যকর তারিখ',
                     prefixIcon: Icon(Icons.event_outlined),
                     suffixIcon: Icon(Icons.calendar_month_outlined),
                   ),
@@ -213,7 +213,7 @@ class _GoldRateSheetState extends ConsumerState<GoldRateSheet> {
                         width: 22,
                         child: CircularProgressIndicator(strokeWidth: 2.4),
                       )
-                    : const Text('Save rate'),
+                    : const Text('দর সংরক্ষণ করুন'),
               ),
             ],
           ),

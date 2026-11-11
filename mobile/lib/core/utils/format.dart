@@ -16,7 +16,7 @@ String formatDate(DateTime? value) {
 
 String formatWeightInVori(num? grams) {
   final value = grams ?? 0;
-  return '${_weightFormat.format(value / 11.664)} vori';
+  return '${_weightFormat.format(value / 11.664)} ভরি';
 }
 
 String formatIsoDate(DateTime value) {

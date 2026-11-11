@@ -140,3 +140,12 @@
 - Money and weights stay strings on the wire, two and three decimals respectively, exactly as the resources cast them. The app renders those values and re-fetches after every write; it never recomputes a total, a due, or interest.
 - `Weight` in `mobile/lib/core/utils/weight.dart` mirrors `app/Support/Weight.php` and `resources/js/utils/weight.js` rather than introducing a third set of ratios. `gramsToTraditional()` returns each unit's **independent** equivalent and is not the inverse of `traditionalToGrams()`, which combines discrete quantities; the Dart tests assert that contract rather than a round trip that would double-count.
 - Only the Step 1 packages are in `pubspec.yaml`. `mobile_scanner`, `firebase_messaging`, `sqflite`/`drift`, `image_picker` and the sharing and Bluetooth printer packages arrive with the step that uses them, because several of them cannot build until their platform configuration exists.
+
+## Mobile app (Step 3)
+
+- A scan cannot call `GET /items/{tag_no}` because the route binds by numeric id only. The scanner returns the raw code and the app resolves it through `GET /items?search=`, then accepts only an exact case-insensitive match on `tag_no` or `barcode`. That same response is used for the detail sheet, so a scan costs one request.
+- Item filters mirror `IndexItemRequest` exactly (`search`, `category_id`, `karat`, `status`); karat and status controls are driven by the backend enums rather than free text.
+- The list controller keeps a generation counter and drops stale responses, so a slow page load cannot overwrite a newer filter or search result. Pagination appends only while the same generation is current.
+- Photos are picked with `image_picker`, compressed to a 1200 px JPEG before upload, and sent as the optional multipart `image` field. The client sends gross and stone weight only; net weight is the server's `gross - stone` calculation and is never trusted from the client.
+- The add-item action is hidden unless the user holds `manage inventory`; browsing the list and stock summary need `view inventory`. Both screens hold only read state and re-fetch after a successful create.
+- The stock summary shows the server's `by_karat` rows as returned, including karats with zero items, so it can be compared directly with the web Stock Summary page.

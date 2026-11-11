@@ -60,7 +60,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     final customers = ref.watch(customersControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Customers')),
+      appBar: AppBar(title: const Text('গ্রাহক')),
       body: Column(
         children: [
           Padding(
@@ -70,12 +70,12 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               textInputAction: TextInputAction.search,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Search name, phone, NID or code',
+                hintText: 'নাম, মোবাইল, এনআইডি বা কোড খুঁজুন',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isEmpty
                     ? null
                     : IconButton(
-                        tooltip: 'Clear search',
+                        tooltip: 'অনুসন্ধান মুছুন',
                         onPressed: () {
                           _searchController.clear();
                           _onSearchChanged('');
@@ -92,7 +92,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               onRetry: () =>
                   ref.read(customersControllerProvider.notifier).refresh(),
               isEmpty: (page) => page.items.isEmpty,
-              emptyMessage: 'No customers found.',
+              emptyMessage: 'কোনো গ্রাহক পাওয়া যায়নি',
               emptyIcon: Icons.people_outline,
               builder: (context, page) => RefreshIndicator(
                 onRefresh: () =>
@@ -167,7 +167,7 @@ class _CustomerTile extends StatelessWidget {
           Text(
             customer.code,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 2),

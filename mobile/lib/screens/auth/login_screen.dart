@@ -76,20 +76,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     const _BrandMark(),
                     const SizedBox(height: 36),
-                    Text('Sign in', style: theme.textTheme.headlineSmall),
+                    Text('প্রবেশ করুন', style: theme.textTheme.headlineSmall),
                     const SizedBox(height: 6),
                     Text(
-                      'Use your shop account to continue.',
+                      'দোকানের অ্যাকাউন্ট দিয়ে প্রবেশ করুন',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.outline,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 28),
                     if (unavailable != null) ...[
                       _Notice(
                         icon: Icons.cloud_off_outlined,
-                        message: unavailable.message,
-                        actionLabel: 'Retry',
+                        message: unavailable.message.contains('No connection')
+                            ? 'ইন্টারনেট সংযোগ নেই। নেটওয়ার্ক পরীক্ষা করে আবার চেষ্টা করুন।'
+                            : unavailable.message,
+                        actionLabel: 'আবার চেষ্টা করুন',
                         onAction: () =>
                             ref.read(authControllerProvider.notifier).restore(),
                         isError: true,
@@ -110,16 +112,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       autocorrect: false,
                       enabled: !_submitting,
                       decoration: const InputDecoration(
-                        labelText: 'Email',
+                        labelText: 'ইমেইল',
                         prefixIcon: Icon(Icons.alternate_email),
                       ),
                       validator: (value) {
                         final email = value?.trim() ?? '';
                         if (email.isEmpty) {
-                          return 'Enter your email.';
+                          return 'আপনার ইমেইল ঠিকানা দিন';
                         }
                         if (!email.contains('@')) {
-                          return 'Enter a valid email address.';
+                          return 'সঠিক ইমেইল ঠিকানা দিন';
                         }
                         return null;
                       },
@@ -132,12 +134,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       enabled: !_submitting,
                       onFieldSubmitted: (_) => _submit(),
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: 'পাসওয়ার্ড',
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           tooltip: _obscurePassword
-                              ? 'Show password'
-                              : 'Hide password',
+                              ? 'পাসওয়ার্ড দেখুন'
+                              : 'পাসওয়ার্ড লুকান',
                           onPressed: () => setState(
                             () => _obscurePassword = !_obscurePassword,
                           ),
@@ -149,7 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                       validator: (value) => (value ?? '').isEmpty
-                          ? 'Enter your password.'
+                          ? 'আপনার পাসওয়ার্ড দিন'
                           : null,
                     ),
                     if (_error != null) ...[
@@ -171,7 +173,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 strokeWidth: 2.4,
                               ),
                             )
-                          : const Text('Sign in'),
+                          : const Text('প্রবেশ করুন'),
                     ),
                   ],
                 ),
@@ -211,11 +213,11 @@ class _BrandMark extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Jewellery Shop', style: theme.textTheme.titleLarge),
+        Text('জুয়েলার্স শপ', style: theme.textTheme.titleLarge),
         Text(
-          'Counter app',
+          'কাউন্টার অ্যাপ',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],

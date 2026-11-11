@@ -19,11 +19,11 @@ class CustomerProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Back to customers',
+          tooltip: 'গ্রাহক তালিকায় ফিরে যান',
           onPressed: () => context.go('/customers'),
           icon: const Icon(Icons.arrow_back),
         ),
-        title: const Text('Customer'),
+        title: const Text('গ্রাহকের তথ্য'),
       ),
       body: StateHandler<CustomerProfile>(
         value: profile,
@@ -52,10 +52,10 @@ class _ProfileBody extends StatelessWidget {
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             tabs: [
-              const Tab(text: 'Overview'),
-              Tab(text: 'Sales (${history.sales.length})'),
-              Tab(text: 'Pawns (${history.pawns.length})'),
-              Tab(text: 'Payments (${history.payments.length})'),
+              const Tab(text: 'সারসংক্ষেপ'),
+              Tab(text: 'বিক্রয় (${history.sales.length})'),
+              Tab(text: 'বন্ধক (${history.pawns.length})'),
+              Tab(text: 'পেমেন্ট (${history.payments.length})'),
             ],
           ),
           Expanded(
@@ -121,7 +121,7 @@ class _ProfileHeader extends StatelessWidget {
                     Text(
                       customer.code,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.outline,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     if (customer.phone.isNotEmpty)
@@ -134,9 +134,9 @@ class _ProfileHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'Due balance',
+                    'বকেয়া ব্যালেন্স',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -175,7 +175,7 @@ class _OverviewTab extends StatelessWidget {
             Expanded(
               child: _MiniCard(
                 icon: Icons.account_balance_wallet_outlined,
-                label: 'Due balance',
+                label: 'বকেয়া ব্যালেন্স',
                 value: formatMoney(history.dueBalance),
                 isError: history.dueBalance > 0,
               ),
@@ -184,7 +184,7 @@ class _OverviewTab extends StatelessWidget {
             Expanded(
               child: _MiniCard(
                 icon: Icons.badge_outlined,
-                label: 'NID',
+                label: 'এনআইডি',
                 value: customer.nid ?? '—',
               ),
             ),
@@ -196,25 +196,25 @@ class _OverviewTab extends StatelessWidget {
             children: [
               _InfoRow(
                 icon: Icons.my_location_outlined,
-                label: 'Address',
+                label: 'ঠিকানা',
                 value: customer.address ?? '—',
               ),
               const Divider(height: 1),
               _InfoRow(
                 icon: Icons.notes_outlined,
-                label: 'Notes',
+                label: 'নোট',
                 value: customer.notes ?? '—',
               ),
               const Divider(height: 1),
               _InfoRow(
                 icon: Icons.savings_outlined,
-                label: 'Opening balance',
+                label: 'প্রারম্ভিক জের',
                 value: formatMoney(customer.openingBalance),
               ),
               const Divider(height: 1),
               _InfoRow(
                 icon: Icons.event_available_outlined,
-                label: 'Customer since',
+                label: 'নিবন্ধন তারিখ',
                 value: formatDate(customer.createdAt),
               ),
             ],
@@ -254,7 +254,7 @@ class _MiniCard extends StatelessWidget {
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 2),
@@ -314,7 +314,7 @@ class _SalesTab extends StatelessWidget {
     if (sales.isEmpty) {
       return const _EmptyTab(
         icon: Icons.receipt_long_outlined,
-        message: 'No sales for this customer yet.',
+        message: 'এই গ্রাহকের কোনো বিক্রয় নেই',
       );
     }
 
@@ -330,9 +330,9 @@ class _SalesTab extends StatelessWidget {
           status: sale.status,
           subtitle: formatDate(sale.date),
           amounts: [
-            _Amount(label: 'Total', value: sale.total),
-            _Amount(label: 'Paid', value: sale.paid),
-            _Amount(label: 'Due', value: sale.due, emphasize: sale.due > 0),
+            _Amount(label: 'মোট', value: sale.total),
+            _Amount(label: 'পরিশোধিত', value: sale.paid),
+            _Amount(label: 'বকেয়া', value: sale.due, emphasize: sale.due > 0),
           ],
         );
       },
@@ -350,7 +350,7 @@ class _PawnsTab extends StatelessWidget {
     if (pawns.isEmpty) {
       return const _EmptyTab(
         icon: Icons.handshake_outlined,
-        message: 'No pawns for this customer yet.',
+        message: 'এই গ্রাহকের কোনো বন্ধক নেই',
       );
     }
 
@@ -365,12 +365,12 @@ class _PawnsTab extends StatelessWidget {
           title: pawn.pawnNo,
           status: pawn.status,
           subtitle:
-              '${formatDate(pawn.date)} → due ${formatDate(pawn.dueDate)}',
+              '${formatDate(pawn.date)} → মেয়াদ ${formatDate(pawn.dueDate)}',
           amounts: [
-            _Amount(label: 'Principal', value: pawn.principal),
-            _Amount(label: 'Interest', value: pawn.interestDue),
+            _Amount(label: 'মূলধন', value: pawn.principal),
+            _Amount(label: 'সুদ', value: pawn.interestDue),
             _Amount(
-              label: 'Payable',
+              label: 'প্রদেয়',
               value: pawn.totalPayable,
               emphasize: true,
             ),
@@ -391,7 +391,7 @@ class _PaymentsTab extends StatelessWidget {
     if (payments.isEmpty) {
       return const _EmptyTab(
         icon: Icons.payments_outlined,
-        message: 'No payments recorded for this customer yet.',
+        message: 'এই গ্রাহকের কোনো পেমেন্ট রেকর্ড নেই',
       );
     }
 
@@ -410,14 +410,14 @@ class _PaymentsTab extends StatelessWidget {
           status: payment.method,
           subtitle: formatDate(payment.date),
           amounts: [
-            _Amount(label: 'Amount', value: payment.amount, emphasize: true),
+            _Amount(label: 'পরিমাণ', value: payment.amount, emphasize: true),
           ],
           footer: reference == null
               ? null
               : Text(
-                  'Ref: $reference',
+                  'রেফারেন্স: $reference',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
         );
@@ -468,7 +468,7 @@ class _RecordCard extends StatelessWidget {
             Text(
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 12),
@@ -513,7 +513,7 @@ class _AmountTile extends StatelessWidget {
         Text(
           amount.label,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 2),
@@ -557,9 +557,20 @@ class _StatusChip extends StatelessWidget {
         color = theme.colorScheme.secondary;
     }
 
-    final label = normalized.isEmpty
-        ? '—'
-        : '${normalized[0].toUpperCase()}${normalized.substring(1)}';
+    final label = switch (normalized) {
+      'completed' => 'সম্পন্ন',
+      'void' => 'বাতিল',
+      'active' => 'চলতি',
+      'overdue' => 'মেয়াদোত্তীর্ণ',
+      'redeemed' => 'খালাসকৃত',
+      'forfeited' => 'বাজেয়াপ্ত',
+      'cash' => 'নগদ',
+      'bkash' => 'বিকাশ',
+      'nagad' => 'নগদ (মোবাইল)',
+      'card' => 'কার্ড',
+      'bank' => 'ব্যাংক',
+      _ => normalized.isEmpty ? '—' : normalized,
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -594,13 +605,13 @@ class _EmptyTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: theme.colorScheme.outline),
+            Icon(icon, size: 44, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

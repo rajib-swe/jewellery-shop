@@ -197,13 +197,19 @@ Commit: `feat(mobile): push notifications, offline read cache, and release build
 
 - [x] Step 1: Bootstrap, auth, and shell
 - [x] Step 2: Dashboard, gold rate, and customers
-- [ ] Step 3: Inventory and barcode scan
+- [x] Step 3: Inventory and barcode scan
 - [ ] Step 4: Sale entry and pawn accounts
+  - [ ] Sale Entry: `CustomerPicker`, scan/search items into a cart, server-computed totals from `POST /sales` (no `/sales/preview`), payment rows, exchange rows, submit to `/sales`.
+  - [ ] Sale list + detail; void action (role-gated, `permission:void sales`).
+  - [ ] Pawn list (active/overdue/redeemed filters), New Pawn form, Pawn detail with server live interest breakdown; Pay / Redeem / Renew actions.
+  - [ ] Invoice/ticket PDF share from web routes `/sales/{id}/pdf` and `/pawns/{id}/pdf` (needs authenticated download + `share_plus`/`printing`).
 - [ ] Step 5: Push notifications, offline read cache, and release build
 
 Step 1 notes: `/sales/preview` does not exist, so Step 4 must read totals from the `POST /sales` response instead of a preview call. `/device-tokens` and the push backend do not exist either, so Step 5 is blocked on the server side.
 
 Step 2 notes: the dashboard is served by `GET /reports/dashboard` and is gated by `permission:view reports`; the gold rate update is gated in the UI to admin/manager roles and the API to `permission:manage gold rates`. Rates and customers were exercised against the local HTTP API. The local dev database is behind the current seeders (admin lacks `view reports`, and the `expenses` table is missing), so dashboard figures could not be compared locally; a seeded install will expose the same payload the web dashboard uses.
+
+Step 3 notes: there is no `GET /items/{tag_no}`, so a scan resolves through `GET /items?search=` and then matches the exact `tag_no` or `barcode`; the detail sheet uses the item returned by that search because `GET /items/{id}` only binds by numeric id. Filters mirror `IndexItemRequest` (`search`, `category_id`, `karat`, `status`). The add-item form is shown only with `manage inventory` and posts multipart (`image` optional, compressed to JPEG first). Verified against the local HTTP API: list, categories, stock summary, a barcode search, and a multipart create (server computed `net_weight`, and the test item was deleted afterwards). The local database needed the pending migrations (`expenses`, `cash_transactions`, `daily_closings`, `convert_weights_to_points`) before `/stock/summary` would run; summary counts only `in_stock` items, matching the web page.
 
 ---
 

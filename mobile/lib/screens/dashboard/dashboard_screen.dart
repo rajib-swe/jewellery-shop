@@ -40,7 +40,7 @@ class DashboardScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${rate.karat}K rate saved at ${formatMoney(rate.ratePerGram)} per gram.',
+          '${rate.karat}K স্বর্ণের দর প্রতি গ্রাম ${formatMoney(rate.ratePerGram)} সংরক্ষণ করা হয়েছে।',
         ),
       ),
     );
@@ -56,11 +56,11 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('ড্যাশবোর্ড'),
         actions: [
           if (canManageRates)
             IconButton(
-              tooltip: 'Update gold rate',
+              tooltip: 'স্বর্ণের দাম আপডেট',
               onPressed: () => _openRateSheet(context, ref),
               icon: const Icon(Icons.edit_outlined),
             ),
@@ -70,7 +70,7 @@ class DashboardScreen extends ConsumerWidget {
         onRefresh: () => _refresh(ref),
         child: dashboard.when(
           loading: () =>
-              StateHandlerView.loading(message: "Loading today's figures…"),
+              StateHandlerView.loading(message: 'আজকের হিসাব লোড হচ্ছে…'),
           error: (error, _) => StateHandlerView.error(
             message: error.toString(),
             onRetry: () => _refresh(ref),
@@ -107,13 +107,13 @@ class _Greeting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final displayName = name.trim().isEmpty ? 'there' : name.trim();
+    final displayName = name.trim().isEmpty ? 'কাউন্টার' : name.trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Welcome back, $displayName',
+          'স্বাগতম, $displayName',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -122,7 +122,7 @@ class _Greeting extends StatelessWidget {
         Text(
           formatDate(summary.date),
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -148,14 +148,14 @@ class _MetricGrid extends StatelessWidget {
         final cards = [
           _MetricCard(
             icon: Icons.receipt_long_outlined,
-            label: "Today's sales",
+            label: 'আজকের বিক্রয়',
             value: formatMoney(today.salesTotal),
-            footnote: '${today.invoiceCount} invoices',
+            footnote: '${today.invoiceCount} টি ইনভয়েস',
             color: theme.colorScheme.primary,
           ),
           _MetricCard(
             icon: Icons.account_balance_wallet_outlined,
-            label: 'Cash balance',
+            label: 'ক্যাশ ব্যালেন্স',
             value: formatMoney(today.cashBalance),
             footnote:
                 '+${formatMoney(today.cashIn)} / -${formatMoney(today.cashOut)}',
@@ -163,16 +163,16 @@ class _MetricGrid extends StatelessWidget {
           ),
           _MetricCard(
             icon: Icons.handshake_outlined,
-            label: 'Active pawns',
+            label: 'চলতি বন্ধক',
             value: '${pawns.activeCount}',
-            footnote: 'Outstanding ${formatMoney(pawns.outstandingPrincipal)}',
+            footnote: 'বকেয়া মূলধন ${formatMoney(pawns.outstandingPrincipal)}',
             color: theme.colorScheme.secondary,
           ),
           _MetricCard(
             icon: Icons.calendar_month_outlined,
-            label: 'Overdue pawns',
+            label: 'মেয়াদোত্তীর্ণ বন্ধক',
             value: '${pawns.overdueCount}',
-            footnote: 'Interest due ${formatMoney(pawns.interestDue)}',
+            footnote: 'বকেয়া সুদ ${formatMoney(pawns.interestDue)}',
             color: pawns.overdueCount > 0
                 ? theme.colorScheme.error
                 : const Color(0xFF2E7D5B),
@@ -236,7 +236,7 @@ class _MetricCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 2),
@@ -256,7 +256,7 @@ class _MetricCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -299,7 +299,7 @@ class _GoldRateCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Gold rate',
+                    'স্বর্ণের দাম',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -309,7 +309,7 @@ class _GoldRateCard extends StatelessWidget {
                   TextButton.icon(
                     onPressed: onUpdate,
                     icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('Update'),
+                    label: const Text('আপডেট'),
                   ),
               ],
             ),
@@ -323,19 +323,19 @@ class _GoldRateCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Could not load gold rates. $error',
+                      'স্বর্ণের দর লোড করা যায়নি। $error',
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
-                  TextButton(onPressed: onRetry, child: const Text('Retry')),
+                  TextButton(onPressed: onRetry, child: const Text('আবার চেষ্টা করুন')),
                 ],
               ),
               data: (list) {
                 if (list.isEmpty) {
                   return Text(
-                    'No gold rate has been set yet.',
+                    'এখনো কোনো স্বর্ণের দর নির্ধারণ করা হয়নি।',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   );
                 }
@@ -377,15 +377,15 @@ class _GoldRateRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '${formatMoney(rate.ratePerGram)} / g',
+              '${formatMoney(rate.ratePerGram)} / গ্রাম',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             Text(
-              'from ${formatDate(rate.effectiveDate)}',
+              'কার্যকর: ${formatDate(rate.effectiveDate)}',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

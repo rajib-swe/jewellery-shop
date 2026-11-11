@@ -113,12 +113,12 @@ class _CustomerPickerSheetState extends ConsumerState<_CustomerPickerSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Choose customer',
+                      'গ্রাহক নির্বাচন করুন',
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: 'বন্ধ',
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
                   ),
@@ -133,12 +133,12 @@ class _CustomerPickerSheetState extends ConsumerState<_CustomerPickerSheet> {
                 textInputAction: TextInputAction.search,
                 onChanged: _onSearchChanged,
                 decoration: InputDecoration(
-                  hintText: 'Search name, phone, NID or code',
+                  hintText: 'নাম, মোবাইল, এনআইডি বা কোড খুঁজুন',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchController.text.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Clear search',
+                          tooltip: 'মুছুন',
                           onPressed: () {
                             _searchController.clear();
                             _onSearchChanged('');
@@ -157,7 +157,7 @@ class _CustomerPickerSheetState extends ConsumerState<_CustomerPickerSheet> {
 
   Widget _buildBody() {
     if (_loading) {
-      return StateHandlerView.loading(message: 'Searching customers…');
+      return StateHandlerView.loading(message: 'গ্রাহক খোঁজা হচ্ছে…');
     }
 
     if (_error != null) {
@@ -171,8 +171,8 @@ class _CustomerPickerSheetState extends ConsumerState<_CustomerPickerSheet> {
       return StateHandlerView.empty(
         icon: Icons.people_outline,
         message: _searchController.text.trim().isEmpty
-            ? 'No customers yet.'
-            : 'No customers match that search.',
+            ? 'এখনো কোনো গ্রাহক নেই'
+            : 'এই তথ্যে কোনো গ্রাহক পাওয়া যায়নি',
       );
     }
 

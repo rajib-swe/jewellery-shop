@@ -8,7 +8,7 @@ class StateHandler<T> extends StatelessWidget {
     required this.onRetry,
     required this.builder,
     this.isEmpty,
-    this.emptyMessage = 'Nothing to show yet.',
+    this.emptyMessage = 'এখনও কোনো তথ্য নেই',
     this.emptyIcon = Icons.inbox_outlined,
     this.loadingMessage,
   });
@@ -114,13 +114,13 @@ class _EmptyBody extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
-        Icon(icon, size: 48, color: theme.colorScheme.outline),
+        Icon(icon, size: 48, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
         const SizedBox(height: 16),
         Text(
           message,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.outline,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -158,7 +158,7 @@ class _ErrorBody extends StatelessWidget {
           child: FilledButton.tonalIcon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh),
-            label: const Text('Try again'),
+            label: const Text('আবার চেষ্টা করুন'),
           ),
         ),
       ],
