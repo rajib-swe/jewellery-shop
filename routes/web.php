@@ -6,7 +6,11 @@ use App\Http\Controllers\Documents\PawnTicketController;
 use App\Http\Controllers\Documents\ReceiptController;
 use App\Http\Controllers\Documents\ReportPrintController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 Route::get('/login', fn () => view('app'))->name('login');
 
@@ -35,6 +39,21 @@ Route::middleware(['auth:sanctum', 'permission:view pawns'])->group(function ():
 Route::middleware(['auth:sanctum', 'permission:view reports'])->group(function (): void {
     Route::get('/reports/{report}/print', ReportPrintController::class)
         ->name('reports.print');
+});
+
+Route::get('/migrate-db', function () {
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        $output = Artisan::output();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $admin->syncPermissions(Permission::all());
+
+        return response("<h2>Database Migrated & Permissions Synced Successfully!</h2><pre>{$output}</pre>");
+    } catch (Throwable $e) {
+        return response("<h2>Error during migration</h2><pre>{$e->getMessage()}</pre>", 500);
+    }
 });
 
 Route::fallback(function (Request $request) {

@@ -373,41 +373,50 @@ class _NewPawnScreenState extends ConsumerState<NewPawnScreen> {
             if (_pawnItems.isEmpty)
               Card(
                 color: AppColors.surfaceVariant,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                        child: const Icon(Icons.scale, color: AppColors.primary, size: 24),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'কোনো স্বর্ণালংকার যোগ করা হয়নি',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              'বন্ধক রাখতে উপরে "+ পণ্য যোগ" বাটনে চাপুন।',
-                              style: TextStyle(color: AppColors.inkMuted, fontSize: 13),
-                            ),
-                          ],
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.scale, color: AppColors.primary, size: 28),
                         ),
-                      ),
-                      FilledButton.tonal(
-                        onPressed: _addPawnItem,
-                        child: const Text('যোগ করুন'),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        const Text(
+                          'কোনো স্বর্ণালংকার যোগ করা হয়নি',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: AppColors.ink,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'বন্ধক রাখতে উপরে "+ পণ্য যোগ" বাটনে চাপুন',
+                          style: TextStyle(color: AppColors.inkMuted, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 14),
+                        FilledButton.tonalIcon(
+                          onPressed: _addPawnItem,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('স্বর্ণালংকার যোগ করুন'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            minimumSize: const Size(0, 40),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               )
@@ -433,6 +442,7 @@ class _NewPawnScreenState extends ConsumerState<NewPawnScreen> {
                 child: TextFormField(
                   controller: _notesController,
                   maxLines: 2,
+                  keyboardType: TextInputType.text,
                   style: const TextStyle(color: AppColors.ink),
                   decoration: const InputDecoration(
                     labelText: 'নোট বা মন্তব্য',
@@ -880,7 +890,10 @@ class _PawnItemCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -897,7 +910,6 @@ class _PawnItemCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Text(
                         '${item.weight.toStringAsFixed(3)} গ্রাম (${formatWeightInVori(item.weight)})',
                         style: const TextStyle(
@@ -1141,6 +1153,9 @@ class _PawnItemFormSheetState extends State<_PawnItemFormSheet> {
               TextFormField(
                 controller: _descriptionController,
                 autofocus: true,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.words,
                 style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w600),
                 validator: (value) =>
                     (value == null || value.trim().isEmpty)
@@ -1148,6 +1163,7 @@ class _PawnItemFormSheetState extends State<_PawnItemFormSheet> {
                         : null,
                 decoration: const InputDecoration(
                   labelText: 'অলংকারের বিবরণ (যেমন: সোনার চেইন) *',
+                  hintText: 'সোনার চেইন, বালা, আংটি ইত্যাদি',
                   prefixIcon: Icon(Icons.description_outlined),
                 ),
               ),

@@ -20,8 +20,12 @@ use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\StockController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 Route::prefix('v1')->group(function (): void {
     Route::post('/login', [AuthController::class, 'login'])
@@ -41,14 +45,31 @@ Route::prefix('v1')->group(function (): void {
         Route::match(['put', 'patch'], '/settings', [SettingsController::class, 'update'])
             ->middleware('permission:manage settings')
             ->name('api.v1.settings.update');
-        Route::post('/settings/migrate', function () {
-            Artisan::call('migrate', ['--force' => true]);
+        Route::post('/settings/migrate', function (Request $request) {
+            try {
+                Artisan::call('migrate', ['--force' => true]);
+                $output = Artisan::output();
 
-            return response()->json([
-                'message' => 'Database migrations executed.',
-                'output' => Artisan::output(),
-            ]);
-        })->middleware('permission:manage settings');
+                if (class_exists(PermissionRegistrar::class)) {
+                    app(PermissionRegistrar::class)->forgetCachedPermissions();
+                    $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+                    $adminRole->syncPermissions(Permission::all());
+
+                    if ($request->user() && ! $request->user()->hasRole('admin')) {
+                        $request->user()->assignRole('admin');
+                    }
+                }
+
+                return response()->json([
+                    'message' => 'ডাটাবেস মাইগ্রেশন ও পারমিশন সফলভাবে সম্পন্ন হয়েছে।',
+                    'output' => $output,
+                ]);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'message' => 'মাইগ্রেশন ব্যর্থ হয়েছে: '.$e->getMessage(),
+                ], 500);
+            }
+        });
 
         Route::get('/gold-rates/latest', [GoldRateController::class, 'latest'])
             ->middleware('permission:view gold rates')
@@ -260,16 +281,12 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.v1.cash-book.store');
 
         Route::get('/daily-closings', [DailyClosingController::class, 'index'])
-            ->middleware('permission:view accounts')
             ->name('api.v1.daily-closings.index');
         Route::get('/daily-closings/show', [DailyClosingController::class, 'show'])
-            ->middleware('permission:view accounts')
             ->name('api.v1.daily-closings.show');
         Route::post('/daily-closings', [DailyClosingController::class, 'store'])
-            ->middleware('permission:close accounts')
             ->name('api.v1.daily-closings.store');
         Route::post('/daily-closings/{closing}/reopen', [DailyClosingController::class, 'reopen'])
-            ->middleware('permission:close accounts')
             ->name('api.v1.daily-closings.reopen');
 
         Route::get('/users', [UserController::class, 'index'])

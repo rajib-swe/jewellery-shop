@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../screens/accounts/daily_closing_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/customers/customer_profile_screen.dart';
 import '../../screens/customers/customers_screen.dart';
@@ -22,6 +23,7 @@ abstract final class AppRoutes {
   static const String pawn = '/pawn';
   static const String customers = '/customers';
   static const String more = '/more';
+  static const String dailyClosing = '/daily-closing';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -40,6 +42,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.dailyClosing,
+        builder: (context, state) => const DailyClosingScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

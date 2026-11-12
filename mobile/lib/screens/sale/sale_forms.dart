@@ -94,12 +94,16 @@ class _SaleLineFormSheetState extends State<_SaleLineFormSheet> {
               TextFormField(
                 controller: _nameController,
                 autofocus: true,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.words,
                 validator: (value) =>
                     (value == null || value.trim().isEmpty)
                         ? 'পণ্যের নাম আবশ্যক'
                         : null,
                 decoration: const InputDecoration(
-                  labelText: 'পণ্যের নাম',
+                  labelText: 'পণ্যের নাম *',
+                  hintText: 'যেমন: সোনার চেইন, আংটি, বালা',
                   prefixIcon: Icon(Icons.label_outline),
                 ),
               ),
@@ -372,12 +376,16 @@ class _ExchangeFormSheetState extends State<_ExchangeFormSheet> {
               TextFormField(
                 controller: _descriptionController,
                 autofocus: true,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.words,
                 validator: (value) =>
                     (value == null || value.trim().isEmpty)
                         ? 'বিবরণ আবশ্যক'
                         : null,
                 decoration: const InputDecoration(
-                  labelText: 'বিবরণ',
+                  labelText: 'বিবরণ *',
+                  hintText: 'যেমন: পুরাতন সোনার চেইন বা আংটি',
                   prefixIcon: Icon(Icons.description_outlined),
                 ),
               ),

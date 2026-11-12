@@ -17,6 +17,11 @@ abstract final class Endpoints {
   static const String sales = '/sales';
   static const String pawns = '/pawns';
 
+  static const String dailyClosings = '/daily-closings';
+  static const String dailyClosingShow = '/daily-closings/show';
+  static const String migrateDatabase = '/settings/migrate';
+  static String dailyClosingReopen(int id) => '/daily-closings/$id/reopen';
+
   static String customer(int id) => '/customers/$id';
 
   static String customerHistory(int id) => '/customers/$id/history';
